@@ -1,0 +1,1934 @@
+---
+title: "Applied statistical testing for DM"
+author: "Caragea Anda-Maria, Hoisan Stefan-Alexandru"
+date: "08/01/2023"
+output: html_document
+highlight: pygments
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 1. Distributiile de esantionare
+
+**Distributia de esantionare** se refera la studierea mai multor esantioane aleatorii colectate de la o anumita populatie pe baza unui atribut specific. Rezultatele obtinute ofera o imagine clara a variatiilor probabilitatii rezultatelor obtinute. Ca urmare, analistii raman la curent cu rezultatele si, prin urmare, se pot pregati pentru a lua masuri in consecinta.
+
+### 1.1 Distributia de esantionare a mediei
+
+Statistica utilizata pentru estimarea mediei unei populatii, **μ**, este media esantionului, **x̄**. Dacă **x̄** are o distributie cu medie **μ**, abatere standard **σ** si este distribuit aproximativ normal sau **n** este mare, atunci este distribuit aproximativ normal cu medie **μ** si eroare standard **σ / √ n**.
+
+-   **Teorema limitei centrale**
+
+Teorema limitei centrale (CLT) afirma ca distributia esantionului se apropie de o distributie normala (cunoscuta si sub numele de „curba clopot”) pe masura ce dimensiunea esantionului devine mai mare, presupunand ca toate esantioanele sunt identice ca dimensiune, si indiferent de forma distributiei populatiei.
+Altfel spus, CLT este o teorie statistica care afirma ca, avand in vedere o dimensiune suficient de mare a esantionului dintr-o populatie cu un nivel finit de varianta, media tuturor esantioanelor din aceeasi populatie va fi aproximativ egala cu media populatiei. In plus, toate esantioanele vor urma un model aproximativ normal de distributie, toate variatiile fiind aproximativ egale cu varianta populatiei, impartita la dimensiunea fiecarui esantion.
+
+De exemplu, sa presupunem ca temperatura maxima zilnica din luna ianuarie in Dunedin, Noua Zeelanda, urmeaza o distributie normala, cu o medie de 22 de grade Celsius si o abatere standard de 1,5 grade. Pentru esantioanele de dimensiunea n = 5, distributia de esantionare a lui x va fi normala, cu media 22 si o eroare standard de 1,5/ √ 5 ≈ 0,671.
+
+In acest exemplu, distributia de esantionare a lui x este o distributie normala mai inalta, mai mica. Se asteapta o variabilitate mai mica intr-o medie a mai multor masuratori spre deosebire de masuratorile brute, individuale. In plus, prezenta
+lui n in numitorul erorii standard dicteaza o distributie mai precisa in jurul mediei daca se mareste dimensiunea esantionului, ceea ce inseamna ca va „varia mai putin” intre esantioanele de dimensiuni mai mari.
+
+```{r}
+xvals <- seq(16,28,by=0.1)
+fx.samp <- dnorm(xvals,22,1.5/sqrt(5))
+plot(xvals,fx.samp,type="l",lty=2,lwd=2,xlab="",ylab="")
+abline(h=0,col="gray")
+fx <- dnorm(xvals,22,1.5)
+lines(xvals,fx,lwd=2)
+legend("topright",legend=c("raw obs. distbn.","sampling distbn. (mean)"),
+lty=1:2,lwd=c(2,2),bty="n")
+
+#probabilitatea ca o zi din luna ianuarie, aleasa aleatoriu, sa aiba o temperatura maxima de 21,5 grade: 
+pnorm(21.5,mean=22,sd=1.5)
+
+#probabilitatea ca media esantionului sa fie mai mica de 21,5 grade, pe baza unui esantion cu 5 zile din ianuarie
+pnorm(21.5,mean=22,sd=1.5/sqrt(5))
+
+#Zonele umbrite cu lunii arata aceste doua probabilitati. 
+abline(v=21.5,col="gray")
+xvals.sub <- xvals[xvals<=21.5]
+fx.sub <- fx[xvals<=21.5]
+fx.samp.sub <- fx.samp[xvals<=21.5]
+polygon(cbind(c(21.5,xvals.sub),c(0,fx.sub)),density=10)
+polygon(cbind(c(21.5,xvals.sub),c(0,fx.samp.sub)),density=10,
+angle=120,lty=2)
+
+#Generarea aleatorie a 5 temperaturi din Dunedin din distributia X ∼ N(22,1.5)
+obs <- rnorm(5,mean=22,sd=1.5)
+obs
+
+  
+#presupunem ca cele 5 valori constituie toate datele pe care le avem: 
+obs.mean <- mean(obs)
+obs.mean
+obs.sd <- sd(obs)
+obs.sd
+
+#estimarea erorii standard se calculeaza astfel:
+obs.mean.se <- obs.sd/sqrt(5)
+obs.mean.se
+
+
+#gasirea probabilitatii ca media temperaturii e mai mica de 21,5 prin standardizarea valorii
+t4 <- (21.5 - obs.mean)/obs.mean.se
+t4
+
+
+#t4 urmeaza distributia t cu 4 grade de libertate. Probabilitatea estimata: 
+
+pt(t4,df=4)
+
+
+#Distributia t cu v = 4, marcheaza probabilitatea. Densitatea N(0,1) este reprezentata grafic pentru comparatie, aceasta reprezinta versiunea standardizata a N(22, 1.5/√5)
+
+xvals <- seq(-5,5,length=100)
+fx.samp.t <- dt(xvals,df=4)
+plot(xvals,dnorm(xvals),type="l",lty=2,lwd=2,col="gray",xlim=c(-4,4),
+xlab="",ylab="")
+abline(h=0,col="gray")
+lines(xvals,fx.samp.t,lty=3,lwd=2)
+polygon(cbind(c(t4,-5,xvals[xvals<=t4]),c(0,0,fx.samp.t[xvals<=t4])),
+density=10,lty=3)
+legend("topright",legend=c("N(0,1) standard","t (4 df)"),
+col=c("gray","black"),lty=2:3,lwd=c(2,2),bty="n")
+
+```
+
+### 1.2 Distributia de esantionare a proportiei
+
+**Distributia de esantionare a proportiei** masoara proportia de succes, adica sansa de aparitie a anumitor evenimente, impartind numarul de succese, adica sansele, la dimensiunea esantionului **n**. Astfel, proportia esantionului este definita ca p = x / n, unde x este numarul de succese intr-un esantion de marime n.
+
+Sa presupunem ca o comentatoare din domeniul politic, din Statele Unite ale Americii este interesat de proportia cetatenilor in varsta, din orasul sau natal, care detin capacitatea de a vota si care stiu deja cum vor vota la urmatoarele alegeri prezidentiale. Ea obtine 118 raspunsuri de da sau nu de la 118 indivizi aleatorii. Dintre acesti indivizi, 80 spun ca stiu cum vor vota. Pentru investigarea variabilitatii asociata cu proportia de interes, trebuie luat in considerare ![](formula.png){width="150"}, unde p = 80 / 118 :
+
+```{r}
+#estimarea proportiei de interes 
+p.hat <- 80/118
+p.hat
+
+#aproximarea la distributia normala este valida, deoarece ambele valori sunt mai mari decat 5.  
+118*p.hat
+118*(1-p.hat)
+
+#estimarea erorii standard 
+p.se <- sqrt(p.hat * (1-p.hat) / 118)
+p.se
+
+#reprezentarea grafica a distributiei de esantionare:
+pvals <- seq(p.hat-5*p.se,p.hat+5*p.se,length=100)
+p.samp <- dnorm(pvals,mean=p.hat,sd=p.se)
+plot(pvals,p.samp,type="l",xlab="",ylab="",
+xlim=p.hat+c(-4,4)*p.se,ylim=c(0,max(p.samp)))
+abline(h=0,col="gray")
+pvals.sub <- pvals[pvals>=0.7 & pvals<=0.75]
+p.samp.sub <- p.samp[pvals>=0.7 & pvals<=0.75]
+polygon(cbind(c(0.7,pvals.sub,0.75),c(0,p.samp.sub,0)),
+border=NA,col="gray")
+
+#calcularea probabilitatii de interes  
+pnorm(0.75,mean=p.hat,sd=p.se) - pnorm(0.7,mean=p.hat,sd=p.se)
+
+
+```
+
+<center>![](Exercise%2017.1.png)</center>
+
+## Raspunsuri
+
+```{r}
+#Exercitiul 1
+
+mean <- 41.1
+sd <- 11.3
+n <- 6
+
+#a 
+se <- sd / sqrt(n)
+se
+
+#b
+pnorm(55, mean, se) - pnorm (45, mean, se)
+
+#c
+pnorm(65/2, mean, se)
+
+
+#Exericitul 2
+n <- 140
+p <- 0.35 #probabilitatea ca A sa fie ales
+
+#d 
+p * n >= 5 & n * (1 - p) >= 5
+
+#e
+se <- sqrt(p * (1-p) / n )
+1 - pnorm(0.4, p, se)
+
+#f
+upper <- qnorm(0.9, p , se)
+lower <- qnorm(0.1, p, se)
+
+#Exercitiul 3
+
+n <- 63
+xmean <- 37.8
+s <- 34.51
+
+#g 
+se <- s/sqrt(n)
+df <- n - 1
+
+#i 
+newx <- (40 - xmean) / se
+1 - pt(newx, df)
+
+#ii
+newx <- (30 - xmean) / se
+pt(newx, df)
+
+#iii
+newx <- (40 - xmean) / se
+pt(newx, df) - 0.5
+```
+
+## 2. Intervale de incredere
+
+Un **interval de incredere** (IC) este un interval definit de o limita inferioara **l** si o limita superioara **u**, utilizata pentru a descrie valorile posibile ale unui parametru real corespunzator al populatiei in functie de esantionul observat. Prin urmare, interpretarea unui interval de incredere ne permite sa afirmam un „nivel de incredere" ca un adevarat parametru de interes se afla intre aceasta limita superioara si inferioara, adesea exprimat ca procent.
+
+### 2.1 Un interval pentru medie
+
+Un interval de incredere pentru medie ne ofera o gama de valori plauzibile pentru media populatiei. Daca un interval de incredere nu include o anumita valoare, putem spune ca nu este probabil ca respectiva valoare sa fie adevarata medie a populatiei.
+
+Revenind la exemplul anterior legat de media zilnica a temperaturii maxime a lunii ianuarie pentru Dunedin, New Zeeland. Sa presupunem ca observatiile sunt distribuite in mod normal, dar nu se cunoaste adevarata medie µX (care este setata la 22) sau adevarata abatere standard (care este stabilita la 1,5). 
+```{r}
+temp.sample <- rnorm(n=5,mean=22,sd=1.5)
+temp.sample
+
+#calcularea mediei esantionului, a abaterii standard si a erorii standard corespunzatoare a mediei esantionului 
+temp.mean <- mean(temp.sample)
+temp.mean
+temp.sd <- sd(temp.sample)
+temp.sd
+temp.se <- temp.sd/sqrt(5)
+temp.se
+
+
+#Valoarea critica (pozitiva) se gaseste prin furnizarea unei probabilitatii de 1 − α/2 = 0,975 a functiei corespunzatoare.
+
+1-0.05/2
+critval <- qt(0.975, df = 4)
+critval
+
+#aria centrala, simetrica, sub curba, trebuie sa fie 0.95. Se poate confirma acest lucru folosind pt.
+pt(critval,4)-pt(-critval,4)
+
+#gasirea intervalului de incredere de 95% pentru adevarata medie, rezultand l si respectiv u, astfel: 
+temp.mean-critval*temp.se
+
+temp.mean+critval*temp.se
+
+#un interval de incredere de 80% (α = 0,2) si un interval de incredere de 99% (α = 0,01) pentru aceeasi valoare data: 
+
+temp.mean+c(-1,1)*qt(p=0.9,df=4)*temp.se
+
+temp.mean+c(-1,1)*qt(p=0.995,df=4)*temp.se
+```
+
+### 2.2 Un interval pentru proportie
+
+Stabilirea unui interval de incredere pentru o proportie a unui esantion urmeaza aceleasi reguli ca si pentru medie. Pentru estimarea p dintr-un esantion de marime n, intervalul insusi este construit cu eroarea standard ![](formula2.png).
+
+Revenind la exemplul anterior, in care 80 din 118 persoane intervievate au spus ca stiu cum vor vota la urmatoarele alegeri prezidentiale din SUA:
+
+```{r}
+p.hat <- 80/118
+p.hat
+p.se <- sqrt(p.hat*(1-p.hat)/118)
+p.se
+
+#pentru a construi un interval de incredere de 90 % (α = 0,1), valoarea critica adecvata din distributia de esantionare standardizata de interes este dupa cum urmeaza, implicand Pr(−1,644854 < Z < 1,644854) = 0,9 pentru Z ∼ N(0,1):
+
+qnorm(0.95)
+
+#putem concluziona, in proportie de 90%, ca proportia reala de alegatori care stiu cum vor vota la urmatoarele alegeri se afla intre 0,61 si 0,75.
+
+p.hat + c(-1,1) * qnorm(0.95)*p.se
+
+
+```
+
+## 
+
+<center>![](Exercise%2017.2.1.png)</center>
+
+<center>![](Exercise%2017.2.2.png){width="420"}</center>
+
+## Raspunsuri
+
+```{r}
+
+n=34
+x.bar<-14.22
+sigma<-2.9
+
+#a. construirea si interpretarea unui interval de incredere de 90% pentru timpul mediu adevarat
+alpha<-1-.9
+x.bar+c(-1,1)*qnorm(1-alpha/2)*(sigma/sqrt(n))
+
+#b. 
+s<-2.9
+x.bar+c(-1,1)*qt(1-alpha/2,df=n-1)*(s/sqrt(n))
+
+n<-400
+#optiunea B = stangaci
+p.b<-37/n
+p.b
+#optiunea C = ambidextri
+p.c<-11/n
+p.c
+#optiunea A = dreptaci
+p.a<-1-p.b-p.c
+p.a
+
+
+#c. calcularea unui IC de 99% pentru proportia reala de cetateni care sunt B
+
+alpha<-1-0.99
+p.b+(c(-1,1)*qnorm(1-alpha/2))*sqrt(p.b*(1-p.b)/n)
+
+
+#d. 99% incredere in IC a proportiei realea cetatenilor stangaci sau ambidextri
+
+(p.b + p.c)+ c(-1, 1) * qnorm(1 - alpha / 2) * (sqrt((p.b + p.c) * (1 - (p.b + p.c)) / n))
+
+#e.
+
+x.mat<-matrix(NA,5000,3)
+n<-300
+lambda<-0.1
+mu<-1/lambda
+
+for(i in 1: nrow(x.mat)) {
+  sample <- rexp(n, lambda)
+  limits <- mean(sample) + c(-1,1) * qt(1-0.05/2, df = n-1) * (sd(sample) / sqrt(n))
+  x.mat[i, 1:2] <- limits
+  x.mat[i, 3] <- mu >= limits[1]&mu<=limits[2]
+}
+mean(x.mat[,3])
+
+#reprezentarea grafica a primelor 100 intervale de incredere cu media la mijloc
+
+xaxis<-seq(mu-3,mu+3,length=100)
+yaxis<-1:100
+
+plot(xaxis, yaxis, type = "n") + abline(v = 10, lty = 2) + for (i in 1:length(xaxis)) {
+lines(c(x.mat[i, 1], x.mat[i, 2]), c(i, i), col = if (x.mat[i, 1] < 10 & x.mat[i, 2] > 10) {
+                        "blue"
+                  } else{
+                        "red"
+                  })
+            
+            
+            
+      }
+
+     
+```
+
+## 3. Componentele unui test de ipoteza
+
+Testarea ipotezei este o procedura statistica in care se alege intre o ipoteza nula si o ipoteza alternativa bazate pe informatiile dintr-un esantion.
+
+### - Ipoteze
+
+**Ipoteza nula**, notata H0, este afirmatia despre parametrul populatiei care se presupune ca este adevarata, cu exceptia cazului in care exista dovezi convingatoare care sa confirme contrariul.
+
+**Ipoteza alternativa**, notata Ha, este o afirmatie despre parametrul populatiei care este in contradictie cu ipoteza nula si este acceptata ca adevarata numai daca exista dovezi convingatoare in favoarea acesteia.
+
+### - Test Statistic
+
+Odata formate ipotezele, sunt colectate datele din esantion si sunt calculate statistici in functie de parametrii detaliati in ipoteze. Testul statistic reprezinta statistica comparata cu standardul corespunzator a distributiei de esantionare pentru a obtine valoarea p.
+
+### - p-value
+
+Valoarea p este valoarea probabilitatii care este utilizata pentru a cuantifica cantitatea de dovezi, daca exista, impotriva ipotezei nule. Mai simplu spus, cu cat statistica testului este mai extrema, cu atat valoarea p este mai mica. Cu cât valoarea p este mai mica, cu atat este mai mare cantitatea de dovezi statistice impotriva adevarului presupus al lui H0.
+
+### - Nivel de semnificatie
+
+Pentru fiecare test de ipoteza, se presupune un nivel de semnificatie, notat α. Aceasta este folosit pentru a stabili rezultatul testului. Nivelul de semnificatie defineste o limita, in urma careia se decide daca exista suficiente dovezi pentru a vedea H0 ca incorect si a favoriza Ha in schimb.
+
+-   Daca valoarea p este mai mare sau egala cu α, atunci se accepta ipoteza nula in favoarea celei alternative.
+
+-   Daca valoarea p este mai mica decat α, atunci se respinge ipoteza nula si se accepta ipoteza alternativa.
+
+## 4. Testarea mediilor
+
+### 4.1 O singura medie
+
+#### t-Test cu un esantion
+
+t-Test pentru un esantion este un test de ipoteza statistica utilizat pentru a determina daca o medie necunoscuta a populatiei este diferita de o anumita valoare.
+
+Un producator de snacks-uri este interesat de greutatea neta medie a continutului dintr-un pachet de 80 de grame. Un consumator suna si depune o plangere - de-a lungul timpului a cumparat si a cantarit exact continutul a 44 de pachete de 80 de grame alese aleatoriu din diferite magazine si a inregistrat greutatile astfel: 
+```{r}
+ snacks <- c(87.7,80.01,77.28,78.76,81.52,74.2,80.71,79.5,77.87,81.94,80.7,
+82.32,75.78,80.19,83.91,79.4,77.52,77.62,81.4,74.89,82.95,
+73.59,77.92,77.18,79.83,81.23,79.28,78.44,79.01,80.47,76.23,
+78.89,77.14,69.94,78.54,79.7,82.45,77.29,75.52,77.21,75.99,
+81.94,80.41,77.7)
+
+#Clientul sustine ca datele nu pot fi provenite dintr-o distributie cu media µ = 80, deci media adevărată greutatea trebuie să fie mai mică de 80.
+
+#se definesc ipotezele astfel: H0: µ = 80 si Ha: µ < 80
+#se calculeaza media si abaterea standard a esantionului
+
+n <- length(snacks)
+snack.mean <- mean(snacks)
+snack.mean
+snack.sd <- sd(snacks)
+snack.sd
+
+#se calculeaza testul statistic, primul pas fiind calcularea erorii standard a esantionului pentru datele din snacks
+
+snack.se <- snack.sd/sqrt(n)
+snack.se
+
+#apoi se calculeaza T: 
+
+snack.T <- (snack.mean-80)/snack.se
+snack.T
+
+#testul statistic este utilizat pentru a obtine p, asadar:
+#deoarece p este mai mic decat α = 0,05, exista suficiente dovezi pentru a respinge ipoteza nula
+
+pt(snack.T, df = n-1)
+
+
+#rezultatul testului T cu un esantion poate fi gasit si cu functia t.test
+t.test(x=snacks,mu=80,alternative="less")
+
+```
+
+<center>![](Exercise%2018.1.png)</center>
+
+## Raspunsuri
+
+```{r, eval = TRUE}
+#a. 
+
+mu<-3.5
+
+n<-73
+x.bar<-3.97
+x.sd<-2.21
+#semnificatie = 0.05
+#H0<- 3.35
+#Ha != H0
+
+#probabilitatea este mai mare decat alfa (valoarea semnificatiei). Asadar, nu avem motive sa credem ca ipoteza H0 nu este adevarata.
+
+t<-(x.bar-mu)/(x.sd/sqrt(n))
+p<-pt(-t,df=n-1)+(1-pt(t,df=n-1))
+
+#Intervalul de incredere contine H0
+IC<- x.bar+c(-1,1)*qt(0.975,n-1)*x.sd/sqrt(n)
+
+#b. 
+#magnitudinea medie a evenimentelor seismice din Fiji
+mu <- 4.3
+
+# Ha > H0
+alpha <- 0.01
+remove(x.bar)
+
+#valoare p este prea mica - dovada puternica - adevarata magnitudine e mai mare decat 4,3
+
+t.test(quakes$mag,mu=mu,alternative="greater",conf.level=1-alpha)
+
+#c. 
+#Intervalul de incredere nu contine media H0 pentru adevarata valoare a mediei 
+n<-length(quakes$mag)
+n
+IC<-mean(quakes$mag)+ c(-1,1)*qt(1-0.01/2,n-1)* sd(quakes$mag)/sqrt(n)
+IC
+```
+
+### 4.2 Doua medii
+
+Adesea, testarea mediei unui singur esantion nu este suficienta. In multe situatii, se doreste compararea directa a mediilor a doua grupuri distincte de masuratori. Modul in care doua grupuri de date relationeaza unul cu celalalt afecteaza forma specifica a erorii standard pentru diferenta dintre doua medii ale esantioanelor si deci statistica testului in sine.
+
+#### Esantioane independente, cu dispersii diferite
+
+Cel mai general caz este cel in care cele doua seturi de masuratori se bazeaza pe doua grupuri independente, separate (denumite si esantioane nepereche). Se calculeaza mediile esantionului si abaterile standard esantionate ale ambelor seturi de date, se definesc ipotezele de interes si apoi se calculeaza statistica testului.
+
+Pentru un exemplu de esantioane independente, cu disperii diferite, revenim la exemplul cu pachetul de snacks-uri de 80 de grame. Dupa colectarea unui esantion de 44 de pachete (marime notata cu n1). Consumatorul nemultumit colecteaza n2 = 31 pachete de 80 de grame alese aleatoriu de la un producator rival de snacks-uri. Acest set de date se stocheaza in snacks2.
+
+```{r}
+snacks2 <- c(80.22,79.73,81.1,78.76,82.03,81.66,80.97,81.32,80.12,78.98,
+79.21,81.48,79.86,81.06,77.96,80.73,80.34,80.01,81.82,79.3,
+79.08,79.47,78.98,80.87,82.24,77.22,80.03,79.2,80.95,79.17,81)
+
+
+#calcularea mediei si a abaterii standard pentru al doilea esantion 
+
+snack2.mean <- mean(snacks2)
+snack2.mean
+snack2.sd <- sd(snacks2)
+snack2.sd
+
+#adevarata media a noului esantion este notat cu µ2. Se construiesc ipotezele astfel: 
+#H0 : µ2 − µ1 = 0
+#HA : µ2 − µ1 > 0 
+
+#efectuarea testului cu alternative="greater", snacks2 sunt cele furnizate lui x: 
+
+t.test(x=snacks2,y=snacks,alternative="greater",conf.level=0.9)
+
+#se poate interpreta astfel: „90 % increzator ca adevarata diferenta intre greutatea medie neta dintre rival si producatorul original este undeva intre 0,395 si 2,098 grame.
+
+(snack2.mean-snack.mean) + c(-1,1)*qt(0.95,df=60)*sqrt(snack.sd^2/44+snack2.sd^2/31)
+
+```
+
+#### Esantioane independente, cu dispersii egale
+
+Daca se poate presupune echivalenta variantelor, precizia testului este imbunatatita - se folosesc formule diferite pentru eroarea standard a diferentei si pentru calculul df asociat.
+
+Sa presupunem, in mod rezonabil, ca scorurile IQ sunt distribuite in mod normal, iar IQ-ul mediu al populatiei este de 100. Ne intereseaza sa evaluam daca exista o diferenta intre media IQ-ului dintre barbati si femei, sugerand urmatoarele ipoteze: nmen = 12 si nwomen = 20:
+
+- H0: µmen - µwomen = 0
+
+- Ha: µmen - µwomen != 0
+
+```{r}
+men <- c(102,87,101,96,107,101,91,85,108,67,85,82)
+women <- c(73,81,111,109,143,95,92,120,93,89,119,79,90,126,62,92,77,106,
+105,111)
+#se calculeaza media si abaterea standard a esantioanelor
+mean(men)
+sd(men)
+mean(women)
+sd(women)
+
+#raportul abaterilor standard:
+sd(women)/sd(men)
+
+#Testul T
+
+t.test(x=men,y=women,alternative="two.sided",conf.level=0.95,var.equal=TRUE)
+```
+
+#### Esantioane pereche
+
+Datele pereche apar daca masuratorile care formeaza cele doua seturi de observatii sunt inregistrate pentru acelasi individ sau daca sunt legate intre ele intr-un mod important sau evident.
+
+Se ia in considerare o companie interesata de eficacitatea unui medicament conceput pentru a reduce frecventa cardiaca in repaus in batai pe minut (bpm). Este masurata frecventa cardiaca de repaus a 16 indivizii.Indivizilor li se administreaza apoi un tratament si li se masoara din nou ritmul cardiac de repaus. Datele sunt furnizate in cei doi vectori rate.before si rate.after: 
+
+```{r}
+rate.before <- c(52,66,89,87,89,72,66,65,49,62,70,52,75,63,65,61)
+rate.after <- c(51,66,71,73,70,68,60,51,40,57,65,53,64,56,60,59)
+
+#Testul T cu doua esantioane pereche ia in considerare diferenta dintre fiecare pereche de valori. 
+
+rate.d <- rate.after-rate.before
+rate.d
+
+#este calculata media esantionului si abaterea standard a acestor diferente:
+rate.dbar <- mean(rate.d)
+rate.dbar
+rate.sd <- sd(rate.d)
+rate.sd
+
+#vrem sa vedem cu cat se reduce ritmul cardiac, asa ca testul va avea urmatoarele ipoteze: 
+#H0 : µd = 0
+#Ha : µd < 0 
+
+#oentru exemplele actuale de ipoteze, se poate gasi statistica testului si valoarea p cu rate.dbar si rate.sd
+rate.T <- rate.dbar/(rate.sd/sqrt(16))
+rate.T
+pt(rate.T, df = 15)
+
+#aceste rezultate sugereaza dovezi pentru respingerea H0.
+t.test(x=rate.after,y=rate.before,alternative="less",conf.level=0.95,
+paired=TRUE)
+
+#putem spune ca suntem 95% increzatori ca adevarata diferenta medie a frecventei cardiace dupa administrarea tratamentului se afla undeva intre
+rate.dbar-qt(0.975,df=15)*(rate.sd/sqrt(16))
+
+#si
+rate.dbar+qt(0.975,df=15)*(rate.sd/sqrt(16))
+```
+
+<center>![](Exercise%2018.2.1.png)</center>
+
+<center>![](Exercise%2018.2.2.png)</center>
+
+## Raspunsuri
+
+```{r, eval = TRUE}
+#a. 
+
+library("MASS")
+
+anorexia 
+alpha <- 0.05
+#H0: d.mu=0 // Ha: d.mu>0 
+
+#Valoarea lui p este mica, ceea ce indica dovezi puternice pentru acceptarea H0.
+t.test(anorexia[,3],
+       anorexia[,2],
+       alternative = "greater",
+       paired=TRUE)
+
+
+
+#b.
+#Cont
+#Nu exista dovezi statistice care sa respinga afirmatia ca nu exista diferente intre media pre si post in grupul de control.
+t.test(anorexia[anorexia$Treat=="Cont",3],
+       anorexia[anorexia$Treat=="Cont",2],
+       alternative="greater",
+       paired=TRUE)
+
+#CBT
+#Exista dovezi statistice pentru a accepta ca media post este mai mare decat media pre in grupul CBT.
+t.test(anorexia[anorexia$Treat=="CBT",3],
+       anorexia[anorexia$Treat=="CBT",2],
+       alternative="greater",
+       paired=TRUE)
+
+#FT
+#Exista dovezi statistice puternice pentru a accepta ca in grupul FT media post este mai mare decat media pre
+t.test(anorexia[anorexia$Treat=="FT",3],
+       anorexia[anorexia$Treat=="FT",2],
+       alternative="greater",
+       paired=TRUE)
+
+#c.
+#Ipoteze -> H0: ctrlmean - trtmean = 0 // Ha: ctrlmean - trtmean < 0
+head(PlantGrowth)
+levels(PlantGrowth[, 2])
+data.1 <- PlantGrowth[PlantGrowth$group == "ctrl", ]
+data.2 <- PlantGrowth[PlantGrowth$group != "ctrl", ]
+
+#Regula de baza - exista suficiente dovezi pentru a accepta ambele variante, se folosoeste testul de estimare a variantei cumulate
+
+sd(PlantGrowth[PlantGrowth$group != "ctrl",1])/
+      sd(PlantGrowth[PlantGrowth$group == "ctrl",1])
+
+#d.
+#Valoarea p ~ 0,41 - nu exista dovezi pentru a respinge H0, deoarece este mai mare decat alpha = 0,05. Nu exista dovezi statistice suficiente ca trtmean sa fie mai mare decat ctrlmean.
+
+t.test(PlantGrowth[PlantGrowth$group == "ctrl", 1],
+       PlantGrowth[PlantGrowth$group != "ctrl", 1],
+       alternative="less",
+       var.equal = TRUE)
+#e.
+my.t.test <- function(x,
+                      y,
+                      var.equal = FALSE,
+                      paired = FALSE,
+                      ...) {
+      if (!paired) {
+            var.equal <- max(c(sd(x), sd(y))) /
+                  min(c(sd(x), sd(y))) < 2
+      }
+      return(t.test(
+            x = x,
+            y = y,
+            var.equal = var.equal,
+            paired = paired,
+            ...
+      ))
+}
+
+
+my.t.test2 <- function(x,
+                      y,
+                      var.equal = FALSE,
+                      paired = FALSE,
+                      ...) {
+      if (paired) {
+            var.equal <- max(c(sd(x), sd(y))) /
+                  min(c(sd(x), sd(y))) < 2
+      }
+      return(t.test(
+            x = x,
+            y = y,
+            var.equal = var.equal,
+            paired = paired,
+            ...
+      ))
+}
+
+#f.
+
+#i.
+snacks <- c(87.7,80.01,77.28,78.76,81.52,74.2,80.71,79.5,77.87,81.94,80.7,82.32,
+            75.78,80.19,83.91,79.4,77.52,77.62,81.4,74.89,82.95,73.59,77.92,77.18,
+            79.83,81.23,79.28,78.44,79.01,80.47,76.23,78.89,77.14,69.94,78.54,79.7,
+            82.45,77.29,75.52,77.21,75.99,81.94,80.41,77.7)
+snacks2 <- c(80.22,79.73,81.1,78.76,82.03,81.66,80.97,81.32,80.12,78.98,79.21,
+             81.48,79.86,81.06,77.96,80.73,80.34,80.01,81.82,79.3,79.08,79.47,
+             78.98,80.87,82.24,77.22,80.03,79.2,80.95,79.17,81)
+my.t.test(snacks2,snacks,alternative="greater")
+
+#ii.
+
+men <- c(102,87,101,96,107,101,91,85,108,67,85,82)
+women <- c(73,81,111,109,143,95,92,120,93,89,119,79,90,126,62,92,77,106,105,111)
+
+my.t.test(men,women,alternative="two.sided")
+
+#iii.
+
+rate.before <- c(52,66,89,87,89,72,66,65,49,62,70,52,75,63,65,61) 
+rate.after <- c(51,66,71,73,70,68,60,51,40,57,65,53,64,56,60,59) 
+
+my.t.test(rate.after,rate.before,alternative="less",paired=TRUE)
+```
+
+## 5. Testarea proportiilor
+
+### 5.1 O singura proportie
+
+#### z-Test cu un esantion
+
+Pentru a testa valoarea adevarata a unei proportii de succes, π, p trebuie sa fie proportia esantionului pentru n incercari, iar valoare nula trebuie va fi indicata de catre π0.
+
+
+Sa presupunem ca o persoana care prefera un anumit lant de fast-food tinde sa aiba stomacul deranjant intr-un anumit interval de timp dupa ce a luat pranzul obisnuit. El gaseste site-ul unui blogger care crede ca exista sansa de 20% de a avea probleme la stomac la scurt timp dupa ce s-a mancat alimentul repsectiv. Individul este curios sa determine daca rata reala a problemelor la stomac este diferita de valoarea citata de blogger si, de-a lungul timpului, viziteaza aceste magazine de tip fast-food in n = 29 ocazii separate, inregistrand succesul sau esecul de a experimenta probleme cu stomacul. Asadar sunt formulate urmatoarele ipoteze: 
+
+- H0: π = 0.2
+
+- Ha : π != 0.2
+
+Acestea sunt datele observate, unde 1 semnifica atunci cand a avut probleme cu stomacul si 0 in caz contrar: 
+```{r}
+sick <- c(0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1)
+
+#numarul de succese si probabilitatea de succes din acest esantion:
+sum(sick)
+p.hat <- mean(sick)
+p.hat
+
+#o verificare rapida indica faptul ca, conform regulii generale, testul poate fi efectuat in mod rezonabil
+
+29*0.2
+29*0.8
+
+#statistica in z-Test pentru acest exemplu: 
+
+Z <- (p.hat-0.2)/sqrt(0.2*0.8/29)
+Z
+
+2*(1-pnorm(Z))
+
+#
+ p.hat+c(-1,1)*qnorm(0.975)*sqrt(p.hat*(1-p.hat)/29)
+
+#se calculeaza intervalul de incredere la un nivel de 95%
+ 
+ p.hat+c(-1,1)*qnorm(0.975)*sqrt(p.hat*(1-p.hat)/29)
+
+```
+
+#### Functia prop.test
+
+Pentru functia prop.test, se furnizeaza numarul de succese observate **x**, numarul total de incercari **n**, iar valoarea nula **p**.
+
+```{r}
+ prop.test(x=sum(sick),n=length(sick),p=0.2,correct=FALSE)
+
+```
+
+### 5.2 Doua proportii
+
+Un test Z cu doua proportii este un test de ipoteza statistica utilizat pentru a determina daca doua proportii sunt diferite una de cealalta. In timpul efectuarii testului, statistica Z este calculata din doua esantioane independente, iar ipoteza nula este ca cele doua proportii sunt egale.
+
+#### Z-Test pentru doua esantioane
+
+In testarea diferentei adevarate dintre doua proportii din punct de vedere matematic, π1 si π2, fie p1 = x1/n1 proportia esantionului pentru x1 succese in n1 incercari corespunzatoare lui π1 si aceleasi cantitati ca p2 = x2/n2 pentru π2. Cu o valoare nula a diferentei notata π0, statistica testului este data de:
+
+<center>![](formula3.png)</center>
+
+
+Se ia in considerare un grup de studenti care sustin un examen de statistica. In aceasta grupa sunt n1 = 233 studenti cu specializare in psihologie, dintre care x1 = 180 trec si n2 = 197 studenti cu specializare in geografie, dintre care 175 trec. Sa presupunem ca se pretinde ca studentii la geografie au o rata de promovare mai mare decat cei de la psihologie. 
+Reprezentand adevaratele rate de promovare pentru studentii la psihologie ca π1 si studentii la georafie ca π2, aceasta afirmatie poate fi testata statistic folosind o pereche de ipoteze: 
+
+- H0:  π2 − π1 = 0
+
+- Ha : π2 − π1 > 0
+
+Se pot evalua cantitatile necesare ca atare: 
+
+```{r}
+x1 <- 180
+n1 <- 233
+p.hat1 <- x1/n1
+p.hat1
+x2 <- 175
+n2 <- 197
+p.hat2 <- x2/n2
+p.hat2
+
+#proportia comuna
+p.star <- (x1+x2)/(n1+n2)
+p.star
+
+#calculare test Z
+Z <- (p.hat2-p.hat1)/sqrt(p.star*(1-p.star)*(1/n1+1/n2))
+Z
+
+#valoare p substantial mai mica decat α, deci se respinge ipoteza nula in favoarea celei alternative
+
+1-pnorm(Z)
+```
+
+#### Functia: prop.test
+
+Pentru compararea a doua proporții, se trece numarul de succese din fiecare grup ca vector de lungime 2 la x si respectivele dimensiuni ale esantionului respectiv ca un alt vector cu lungimea de la 2 la n.
+
+```{r}
+prop.test(x=c(x2,x1),n=c(n2,n1),alternative="greater",correct=FALSE)
+```
+
+Prin urmare, un interval de incredere de 95% este calculat astfel:
+
+```{r}
+(p.hat2-p.hat1) + c(-1,1)*qnorm(0.975)*sqrt(p.hat1*(1-p.hat1)/n1+p.hat2*(1-p.hat2)/n2)
+```
+
+<center>![](Exercise%2018.3.png)</center>
+
+## Raspunsuri
+
+```{r}
+#a. 
+#Ipoteze: H0: p=0.9 // Ha: p <0.9
+#intrucat ambele sunt adevarate, putem accepta sa se efectueze cu o distributie normala
+
+p<-0.9
+n<-89
+x<-71
+p.hat<-x/n
+n*p.hat>5&n*(1-p.hat)>5
+
+
+
+#b. 
+
+#valoarea p este prea mica, exista destule dovezi statistice pentru a respinge H0 in favoarea Ha.
+z.test<-(p.hat-p)/(sqrt(p*(1-p)/n))
+pnorm(z.test)
+
+
+
+#c. CI
+
+#se exclude media pretinsa de 0.9
+
+p.hat+c(-1,1)*qnorm(0.99)*sqrt(p*(1-p)/n)
+
+x1<-97
+n1<-445
+x2<-90
+n2<-419
+
+p.hat1<-x1/n1
+p.hat2<-x2/n2
+
+#d.
+alpha<-0.05
+#Ipoteze: H0 : p2-p1 = 0 // Ha: p2-p1 != 0
+
+#valoarea p este una mare. Nu exista suficiente dovezi statistice ca probabilitatea este diferita in fiecare tara -> varianta cumulata
+
+prop.test(c(x2,x1),c(n2,n1),alternative = "two.sided",conf.level = 1-alpha, correct = FALSE)
+
+
+p<-(x1+x2)/(n1+n2)
+p
+
+#testarea cu calculul manual
+z<-(p.hat2-p.hat1)/(sqrt(p*(1-p)*(1/n1+1/n2)))
+z
+pval<-2*pnorm(z)
+pval
+
+#e. crearea intervalului de incredere statistic + cricital Value*SE
+
+#Intervalul de incredere include valoarea 0, asigurand ca ambele stari ar putea avea aceeasi proportie.
+
+se<-sqrt(p*(1-p)*(1/n1+1/n2))
+(p.hat2-p.hat1)+c(-1,1)*qnorm(1-alpha/2)*se
+
+```
+
+## 6. Testarea variabilelor categorice
+
+  Testul Z bazat normal este un caz particular al unui set de date care poate avea doua valori. Pentru a testa statistic afirmatiile referitoare la variabile categorice mai generale, cu mai mult de doua niveluri distincte, se foloseste testul chi-patrat. Testul chi-patrat este notat cu χ².
+
+  Exista doua variante comune ale testului chi-patrat:
+
+-   *Prima varianta este testul chi-patrat pentru distributie. Acest test este utilizat pentru a determina daca o distributie observata a unui set de date este similara cu o distributie teoretica specifica. El verifica daca distributia valorilor observate este aproximativ egala cu distributia teoretica specificata.*
+
+-   *A doua varianta este testul chi-patrat pentru independenta. Acest test este utilizat pentru a determina daca o distributie observata a unui set de date este similara cu o distributie teoretica specifica. El verifica daca distributia valorilor observate este aproximativ egala cu distributia teoretica specificata.*
+
+#### 6.1 O singura variabila categorica
+
+  La fel ca testul Z, testul chi-patrat unidimensional este, de asemenea, preocupat cu compararea proportiilor, dar intr-un cadru in care exista mai mult de doua proportii. Un test chi-patrat este utilizat atunci cand avem k niveluri (sau categorii) cu o variabila categorica si dorim sa formulam o ipoteza cu privire la frecventele lor relative pentru a afla ce proportie din n observatii se incadreaza in fiecare categorie definita. Trebuie sa se presupuna excluderea reciproca a categoriilor (o observatie nu poate lua mai mult de o categorie posibila), dar si exhaustivitatea categoriilor (cele k categorii acopera orice caz posibil).
+
+  Sa presupunem ca un cercetator in sociologie este interesat de dispersia proportiilor de par facial la barbatii din orasul sau si daca acestea sunt reprezentate in mod uniform in populatia masculina. El defineste o variabila categoriala cu trei niveluri: barbierit complet (1), numai barba sau numai mustata (2) si barba si mustata (3). El colecteaza date despre 53 de barbati selectati aleatoriu si constata urmatoarele rezultate:
+
+```{r, eval=TRUE}
+hairy <- c(2,3,2,3,2,1,3,3,2,2,3,2,2,2,3,3,3,2,3,2,2,2,1,3,2,2,2,1,2,2,3,
+2,2,2,2,1,2,1,1,1,2,2,2,3,1,2,1,2,1,2,1,3,3)
+```
+
+  Fie π1, π2 și π3 proportiile reale de bărbați din oraș care se încadrează în grupurile 1, 2 și, respectiv, 3. Prin urmare, se va cauta sa se testeze urmatoarele ipoteze:
+
+-   H0 : π1 = π2 = π3 = 1/3
+
+-   HA : H0 is incorrect
+
+  În aceste tipuri de probleme, H0 sustine că proporțiile din fiecare grup sunt egale cu valorile declarate, iar HA este că datele, în ansamblul lor, nu corespund proporțiilor definite în H0. Testul se efectuează presupunând că ipoteza nulă este adevărată, iar dovezile împotriva setării de bază, fără schimbări, vor fi reprezentate de o valoare mica a p-value.
+
+#####  **Testul Chi-Patrat de distributie**
+
+  Cantitățile de interes sunt proporțiile a *n* observații în fiecare dintre cele k categorii, π1, ..., πk, pentru o singură variabilă categorială exhaustivă și reciproc exclusivă. Ipoteza nulă definește valorile nule pentru fiecare proporție; vom nota aceste proportii cu π0(1),..., π0(k). Statistica de testare χ2 este dată ca:
+
+<center>![](Part2/formula.PNG)</center>
+
+*, unde Oi este valoarea observata și Ei este valoarea așteptata în a i-a categorie; i = 1, ..., k. Oi se obține direct din datele brute, iar valoarea așteptata, Ei = nπ0(i), nu este decât produsul dimensiunii n a datelor de proba si a proportiei nule pentru fiecare categorie.*
+
+  În acest tip de test chi-pătrat, este important sa retinem urmatoarele:
+
+-   Termenul de potrivire se referă la apropierea dintre datele observate și distribuția presupusă în ipoteza H0.
+
+-   Extremitatea pozitivă a rezultatului χ2 oferă dovezi împotriva lui H0. Ca atare, valoarea p corespunzătoare este întotdeauna calculată ca o arie a cozii superioare.
+
+-   La fel ca în exemplul de față, un test de uniformitate simplifică ipoteza nula prin faptul că are proporții nule echivalente π0 = π0(1) = ... = π0(k).
+
+-   O ipoteza H0 respinsa nu va spune nimic despre valorile reale ale lui πi. Ea sugerează doar că acestea nu urmează în mod specific H0.
+
+  Această distribuție unidirecțională este cea care duce la valorile pdefinite ca zone de coadă superioară; decizii precum zonele cu una sau două cozi nu au nicio relevanță în aceste tipuri de teste chi pătrat. Urmatorul grafic prezintă cum arată de fapt funcțiile de densitate, avand trei curbe particulare definite cu ν = 1, ν = 5 și ν = 10 grade de libertate.
+
+```{r, eval=TRUE}
+x <- seq(0,20,length=100)
+plot(x,dchisq(x,df=1),type="l",xlim=c(0,15),ylim=c(0,0.5),ylab="density")
+lines(x,dchisq(x,df=5),lty=2)
+lines(x,dchisq(x,df=10),lty=3)
+abline(h=0,col="gray")
+abline(v=0,col="gray")
+legend("topright",legend=c("df=1","df=5","df=10"),lty=1:3)
+```
+
+  Exemplul cu parul facial este un test de uniformitate a distribuirii frecventelor in 3 categorii. Valorile observate si proportiile lor corespunzatoare se pot regasi in urmatoarea figura:
+
+```{r, eval=TRUE}
+n <- length(hairy)
+n
+hairy.tab <- table(hairy)
+hairy.tab
+hairy.tab/n
+```
+
+  Rezultatele calculelor pentru valorile observate (Oi) si valorile asteptate (Ei) pot fi regasite in urmatoarea matrice:
+
+```{r, eval=TRUE}
+expected <- 1/3*n
+expected
+hairy.matrix <- cbind(1:3,hairy.tab,expected,(hairy.tab-expected)^2/expected)
+dimnames(hairy.matrix) <- list(c("clean","beard OR mous.","beard AND mous."),c("i","Oi","Ei","(Oi-Ei)^2/Ei"))
+hairy.matrix
+```
+
+  Statistica testului este dată ca fiind suma contribuțiilor din a patra coloană a matricei hairy.matrix:
+
+```{r, eval=TRUE}
+X2 <- sum(hairy.matrix[,4])
+X2
+```
+
+  Valoarea p corespunzătoare este zona cozii superioare corespunzătoare din distribuție chi-pătrat cu ν = 2 grade de libertate:
+
+```{r, eval=TRUE}
+1-pchisq(X2,df=2)
+```
+
+  Această valoare p mică sugerează că frecvențele reale în categoriile definite de părul facial nu sunt distribuite în mod uniform (într-un mod egal de 1/3, 1/3, 1/3). Rezultatul testului nu oferă adevăratele proporții, ci doar sugerează că acestea nu le urmează pe cele din H0.
+
+#####  **Functia chisq.test**
+
+  Funcția chisq.test ia vectorul de frecvențe observate ca prim argument x. Pentru exemplul părului facial, această linie simplă de cod oferă, prin urmare, aceleași rezultate ca cele găsite anterior:
+
+```{r, eval=TRUE}
+chisq.test(x=hairy.tab)
+```
+
+  În mod implicit, funcția efectuează un test de uniformitate, luând numărul de categorii ca lungime a vectorului furnizat x. Cu toate acestea, să presupunem că cercetătorul care colectează datele privind părul facial își dă seama că datele au fost colectate in Noiembrie, o lună în care multor bărbați le crește mustața în sprijinul miscarii "Mo-vember" pentru a crește importanta aratata sănătății bărbaților. Acest lucru schimbă rezultatele cu privire la frecventele reale în ceea ce privește incadrarea in cele 3 categorii. Cercetatorul dorește acum să testeze următoarele ipoteze:
+
+-   H0 : π0(1) = 0,25; π0(2) = 0,5; π0(3) = 0,25
+
+-   HA : H0 este incorect.
+
+  În cazul în care nu se dorește un test de uniformitate, atunci când ratele "adevărate" în cadrul categoriilor nu sunt toate la fel, funcția chisq.test are nevoie de pasarea ca argument pentru functia p a proporțiilor nule sub forma unui vector de aceeași lungime ca și x. În mod firesc, fiecare intrare din p trebuie să corespundă categoriilor din x:
+
+```{r, eval=TRUE}
+chisq.test(x=hairy.tab,p=c(0.25,0.5,0.25))
+```
+
+  Obtinem astfel o valoare mare pentru p-value, care ne arata ca nu avem suficiente dovezi pentru a discredita H0, deci nu putem spune ca valorile proportiilor din H0 sunt incorecte.
+
+#### 6.2 Doua variabile categorice
+
+  Testul chi-pătrat se poate aplica și în situația în care avem două variabile categorice care se exclud reciproc și sunt exhaustive - le vom nota variabila A și variabila B. Testul acesta este utilizat pentru a detecta dacă ar putea exista unele relații de influență (cu alte cuvinte, dependență) între A și B prin observarea modului în care distribuția frecvențelor se modifică împreună cu categoriile lor. În cazul în care nu există nicio relație, distribuția frecvențelor în variabila A nu va avea nicio legătură cu distribuția frecvențelor în variabila B. Ca atare, această forma particulară a testului chi-pătrat se numește **test de independență** și se realizează întotdeauna cu următoarele ipoteze:
+
+-   H0 : Variabilele A și B sunt independente (nu există nicio relație între A și B)
+
+-   HA : Variabilele A și B nu sunt independente (există o relație între A și B)
+
+  O abatere generală mare de la frecvențele așteptate va avea ca rezultat o valoare mica pentru p-value și, prin urmare, va oferi dovezi împotriva ipotezei H0.
+
+  Pentru exemplificare se va folosi urmatorul scenariu. Sa presupunem ca dermatologii unui spital sunt interesati sa afle succesul lor in tratarea afectiunilor de piele. Au fost in total N = 355 pacienti tratati, fiecare primind unul din cele 4 tratamente posibile: pastile, injectii, tratament cu laser sau un remediu bazat pe plante medicinale. Nivelurile de succes in tratarea afectiunilor sunt urmatoarele: succes complet, succes partial sau niciun efect. Vom construi matricea **skin** pentru a observa rezultatele tratamentelor:
+
+```{r, eval=TRUE}
+skin <- matrix(c(20,32,8,52,9,72,8,32,16,64,30,12),4,3,
+dimnames=list(c("Injection","Tablet","Laser","Herbal"),
+c("None","Partial","Full")))
+skin
+```
+
+#####  **Testul Chi-Patrat de independenta**
+
+  Testul se axează pe modul în care frecvențele a N observații între nivelurile kr (variabila *row*) și nivelurile kc (variabila *column*) sunt distribuite. Statistica testului χ² este dată de formula:
+
+<center>![](Part2/formula2.PNG)</center>
+
+*, unde Oij este valoarea observata și Eij este valoarea așteptata pe linia i si coloana j; Fiecare Eij este gasit facand produsul dintre suma de pe linia i si suma de pe linia j, produs care este apoi impartit la N.*
+
+<center>![](Part2/formula3.PNG)</center>
+
+  Din nou, valoarea lui p-value este întotdeauna o valoare cu coadă superioară și putem considera testul valid dacă este îndeplinită condiția ca cel puțin 80% din valorile E[i, j] să fie cel puțin 5.
+
+  Pentru acest calcul este important sa tinem cont de urmatoarele:
+
+-   Nu este necesar sa ne asumam ca kr = kc
+
+-   Formula folosita pentru statistica testului chi-patrat cu doua valori categorice functioneaza pe acelasi principiu ca formula pentru testul chi-patrat cu o singura valoare categorica. Mai exact, ambele calculeaza suma patratelor diferentelor dintre valorile observate si cele asteptate.
+
+-   O ipoteza H0 respinsa nu ne spune nimic despre natura modului in care frecventele depind una de alta, doar ne sugereaza ca exista o dependenta intre doua variabile categorice
+
+  In calculul valorilor Eij (valorile asteptate), vom avea nevoie de calcularea sumelor liniilor si a coloanelor, dar si de numarul de linii si de coloane ale matricei **skin**:
+
+```{r, eval=TRUE}
+rowSums(skin)
+colSums(skin)
+kr <- nrow(skin)
+kc <- ncol(skin)
+```
+
+  Pentru a continua calculul, trebuie sa inmultim fiecare suma din **rowSums** cu fiecare suma din **colSums**, pentru aceasta vom repeta valorile fiecarui element din vectorul **colSums** de 4 ori pentru ca cei doi vectori sa fie de dimensiuni egale. Urmatorul cod calculeaza matricea rezultatelor asteptate, pas cu pas:
+
+```{r, eval=TRUE}
+rep(colSums(skin),each=kr)
+rep(colSums(skin),each=kr)*rowSums(skin)
+rep(colSums(skin),each=kr)*rowSums(skin)/sum(skin)
+skin.expected <- matrix(rep(colSums(skin),each=kr)*rowSums(skin)/sum(skin),nrow=kr,ncol=kc,dimnames=dimnames(skin))
+skin.expected
+```
+
+  E de precizat faptul ca toate valorile asteptate sunt mai mari decat 5, asa cum este de preferat pentru acest test.
+
+  Vom retine apoi intr-un obiect numit **skin.array** matricele de care avem nevoie in calculul lui χ²:
+
+```{r, eval=TRUE}
+skin.array <- array(data=cbind(skin,skin.expected,
+(skin-skin.expected)^2/skin.expected),
+dim=c(kr,kc,3),
+dimnames=list(dimnames(skin)[[1]],dimnames(skin)[[2]],
+c("O[i,j]","E[i,j]",
+"(O[i,j]-E[i,j])^2/E[i,j]")))
+skin.array
+```
+
+  Apoi vom calcula χ² ca fiind suma elementelor din **skin.array**:
+
+```{r, eval=TRUE}
+X2 <- sum(skin.array[,,3])
+X2
+```
+
+  Valoarea p-value corespunzatoare pentru testul de independenta este:
+
+```{r, eval=TRUE}
+1-pchisq(X2,df=(kr-1)*(kc-1))
+```
+
+  Aceasta valoare p-value este extrem de mica, ceea ce ne ofera dovezi clare pentru respingerea ipotezei H0. In concluzie, este acceptata ipoteza Ha si putem afirma faptul ca exista o relatie intre tipurile de tratament pentru afectiunile de piele si gradul de succes in vindecarea afectiunilor.
+
+#####  **Functia chisq.test**
+
+  Functia **chisq.test** efectueaza un test chi-patrat de independenta, tinand cont de frecventele liniilor si coloanelor, asa cum se realizeaza manual pentru exemplul cu afectiunile de piele. Urmatorul rezultat confirma calculele efectuate anterior:
+
+```{r, eval=TRUE}
+chisq.test(x=skin)
+```
+
+#### Exercitiul 6
+
+<center>![](Part2/Exercise%2018.4-final.png)</center>
+
+#### Exercitiul 6 - Rezolvare
+
+```{r, eval=TRUE}
+# a
+
+data(HairEyeColor)
+total.hec<-HairEyeColor[,,1]+HairEyeColor[,,2]
+
+chisq.test(total.hec)
+
+# Avem o valoare foarte mica a lui p-value, deci avem dovezi statistice puternice pentru a respinge ipoteza H0, ceea ce inseamna ca variabilele A si B nu sunt independente
+
+# b
+
+library("car")
+Duncan[,1]
+
+c.prof<-length(Duncan[Duncan[,1]=="prof",1])
+c.bc<-length(Duncan[Duncan[,1]=="bc",1])
+c.wc<-length(Duncan[Duncan[,1]=="wc",1])
+
+Duncan.tab<-table(Duncan[,1])
+
+# Ipotezele: H0: p1=p2=p3=1 
+# Ha: H0 este gresit
+
+chisq.test(Duncan.tab)
+
+# i
+
+# Valoarea lui p-value este mai mica decat alpha = 0.05, ceea ce respinge ipoteza H0
+# Putem afirma faptul ca variabilele A si B sunt dependente, conform Ha
+
+# ii
+
+# Valoarea lui p-value este mai mare decat alpha = 0.01, ceea ce accepta ipoteza H0
+# Putem afirma faptul ca variabilele A si B sunt independente, conform H0
+```
+
+## 7. Erori si Putere
+
+  In urma discutiilor legate de diversele forme ale ipotezelor statistice de testare, se observa ca toate au un punct comun: interpretarea unui p-value si ce spune despre problema in legatura cu ipoteza. Testarea frecventa a ipotezelor statistice este prezenta in multe domenii de cercetare, astfel ca este important sa se exploreze concepte direct legate.
+
+#### 7.1 Erori de testare a ipotezei
+
+  Ipoteza de testare este aplicata pentru a obtine un p-value care cuantifica dovezi impotriva afirmatiei nule H0. Aceasta este respinsa in favoarea alternativei, HA, daca p-value este mai mica decat un nivel predefinit de significanta α, care in mod conventional se afla intre 0.05 si 0.01. Asa cum s-a explicat mai sus, aceasta abordare este criticata in mod just pentru faptul ca alegerea valorii lui α este in mod essential arbitrara; decizia de a retine sau de a respinge H0 depinde strict de valoarea lui α.
+
+  Se considera pentru moment, dandu-se un anumit test, care este raspunsul corect. Daca H0 este adevarat, se doreste a fi acceptata. Daca, in schimb, HA este adevarata, vrei sa respingi afirmatia nula. Acest "adevar", intr-un fel sau altul, este imposibil de stiut in practica. Acestea fiind spuse, este util sa consideram intr-un mod teoretic cat de buna (sau de rea) o ipoteza de testare data este la producerea unui rezultat care duce la concluzia corecta.
+
+  Pentru a testa validitatea unei respingeri sau a unei acceptari a ipotezei nule, este nevoie sa se identifice doua tipuri de erori:
+
+-   Eroarea de tipul I are loc atunci cand se respinge in mod incorect o afirmatie H0 adevarata. In oricare ipoteza de testare, probabilitatea de aparitie a unei Erori de tipul I este echivalenta cu nivelul de significanta α.
+
+-   Eroarea de tipul II are loc atunci cand se accepta in mod incorect o afirmatie H0 falsa (in alte cuvinte, cand nu se accepta o afirmatie HA adevarata). De vreme ce depinde de valoarea de adevar a lui HA, probabilitatea de aparitiei unei astfel de erori, denumita β, nu este cunoscuta in practica.
+
+#### 7.2 Erori de tipul I
+
+  Daca p-value este mai mica decat α, se respinge afirmatia nula. Daca H0 este de fapt adevarata, valoarea lui α defineste in mod direct probabilitatea faptului ca afirmatia a fost incorect respinsa. Acest fenomen este definit ca o eroare de tipul I.
+
+  Figura urmatoare prezinta o ilustratie conceptuala a probabilitatii de aparitie a unei astfel de erori pentru o presupusa ipoteza de testare pentru o proba medie, unde ipotezele sunt puse ca **H0 : µ = µ0 si HA : µ \> µ0**.
+
+<center>![](Part2/probabilitate-eroare.PNG)</center>
+
+  Distributia ipotezei nule este centrata pe valoarea nula µ0, distributia ipotezei alternative este centrata la dreapta la o valoare µA medie. Dupa cum se observa, daca afirmatia nula este adevarata, atunci probailitatea ca aceasta sa fie incorect respinsa pentru testul de mai sus este egala cu significanta predefinita la nivelul lui α, pozitionata la coada superioara a distributiei lui H0.
+
+#####  **Simularea erorilor de Tipul I**
+
+  Pentru a demonstra rata de aparitie a erorii de tip I printr-o simulare numerica, se poate scrie cod care produce echivalentul repetarii unei ipoteze de testare in conditii cunoscute:
+
+```{r, eval=TRUE}
+typeI.tester <- function(mu0,sigma,n,alpha,ITERATIONS=10000){
+pvals <- rep(NA,ITERATIONS)
+for(i in 1:ITERATIONS){
+temporary.sample <- rnorm(n=n,mean=mu0,sd=sigma)
+temporary.mean <- mean(temporary.sample)
+temporary.sd <- sd(temporary.sample)
+pvals[i] <- 1-pt((temporary.mean-mu0)/(temporary.sd/sqrt(n)),df=n-1)
+}
+return(mean(pvals<alpha))
+}
+```
+
+  Functia **typeI.tester** genereaza un numar de probe egal cu valoarea variabilei ITERATIONS dintr-o distributie normala particulara. Cu fiecare proba, se produce un test de medie de tip coada superioara, presupunand ipotezele: **H0 : µ = µ0 si HA : µ \> µ0**.
+
+  Se poate scadea valoarea variabilei ITERATIONS pentru a genera mai putine probe complete, scazand timpul de computare dar va rezulta in rezultate simulate care sunt mai variabile. Fiecare proba de dimensiune n a unei ipoteze de masurare bruta este generata folosind **rnorm** cu media egala cu argumentul mu0 (si deviatia standard egala cu argumentul sigma). Nivelul de significanta dorit este setat de alfa. In instructiunea for, media probelor si deviatia standard se calculeaza pentru fiecare proba generata.
+
+  Daca fiecare proba era trecuta printr-o ipoteza de testare "reala", p-value era luata din partea dreapta a distributiei t cu n-1 grade de libertate.
+
+  Rularea functiei **typeI.tester**:
+
+```{r, eval=TRUE}
+typeI.tester(mu0=0,sigma=1,n=40,alpha=0.05)
+```
+
+  Asta indica ca 10,000 × 0.0489 = 489 din probele luate care produc un test statistic au un p-value care ar rezulta in respingerea incorecta a lui H0. Rata acestei erori de tip I se afla aproape de valoarea prestabilita α = 0.05.
+
+  Se da un alt exemplu, de data aceasta folosindu-se o valoare α = 0.01:
+
+```{r, eval=TRUE}
+typeI.tester(mu0=-4,sigma=0.3,n=60,alpha=0.01)
+```
+
+  Observam ca, din nou, rata erorii simulate numeric de tip I reflecta significantul de nivel.
+
+#####  **Corectia Bonferroni**
+
+  Faptul ca eroarea de tip I se produce in mod natural din cauza unei variatii aleatorii este in particular importanta si conduce la considerarea aparitiei unor multiple probleme de testare. Daca se conduc multe ipoteze de testare, trebuie abordat cu grija momentul in care se raporteaza "numarul de rezultate signifiante din punct de vedere statistic" -- cu cat creste numarul de ipoteze de testare, cu atat mai mult cresc sansele de a obtine un rezultat eronat. De exemplu, din 20 de teste rulate cu α = 0.05, in medie unul va fi un asa-numit fals pozitiv; daca se ruleaza 40 sau 60 de teste, este mult mai probabil sa se intalneasca rezultate fals-pozitive.
+
+  Cand mai multe ipoteze de testare sunt efectuate, se poate limita problema testarii multiple ,care conduce la aparitia unei erori de tip I, folosind corectarea Bonferroni. Corectarea Bonferroni sugereaza ca la efectuarea unui total de N ipoteze de testare independente, fiecare cu o significanta de nivel alfa, sa se foloseasca in schimb relatia αB = α/N pentru orice interpretare a unei significante statistice. Se atrage atentia ca aceasta corectare la significantul de nivel reprezinta cea mai usoara solutie pentru problema testelor multiple si poate fi criticata pentru natura sa conservatoare, care poate fi problematica atunci cand N are o valoare mare.
+
+#### 7.3 Erori de tipul II
+
+  Problema cu erorile de tip I sugereaza ca este dorit sa se produca o ipoteza de testare cu o valoare α mai mica. Din pacate, nu este tot timpul atat de simplu: reducerea significantului de nivel pentru fiecare test dat duce direct la cresterea in sansa de a intalni o eroare de tip II.
+
+  O eroare de tip II se refera la retinerea in mod incorect a ipotezei nule -- cu alte cuvinte, obtinerea unui p-value mai mare decat significantul de nivel cand ipoteza alternativa este cea adevarata. Probabilitatea de aparitie a unei Erori de Tip II se noteaza cu β.
+
+  Nu este atat de usor de gasit β precum este de a gasi probabilitatea de a se produce o eroare de tipul I pentru ca β depinde, pe langa alti factori, de valoarea adevar a lui µA (care in general este necunoscuta). Daca µA este mai aproape de valoarea ipotetica nula a lui µ0, ne putem imagina translatarea distributiei alternative catre stanga, care rezulta intr-o crestere a lui β.
+
+  Similar, se poate imagina scaderea significantului de nivel α. Facand asta, valorarea critica se muta la dreapta, crescand astfel suprafata lui β. Intuitiv, acest lucru are sens -- cu cat este mai aproape valoarea reala alternativa fata de null si/sau mai mica decat significantul de nivel, cu atat este mai greu sa se gaseasca HA prin respingerea lui H0.
+
+  Daca se presupune ca se stie σ, distributia probelor de interes va fi normala cu media µ0 = 0 si cu o eroare standard de 1/√30. Astfel, cu aria cozii superioare de 0.05, se poate gasi valoarea critica folosind urmatorul cod:
+
+```{r, eval=TRUE}
+critval <- qnorm(1-0.05,mean=0,sd=1/sqrt(30))
+critval
+```
+
+  Eroarea de tip II in acest exemplu este gasita in zona din stanga a cozii, sub distributia alternativa "adevarata", din valoarea critica:
+
+```{r, eval=TRUE}
+pnorm(critval,mean=0.5,sd=1/sqrt(30))
+```
+
+  Din acest exemplu, se poate observa ca o ipoteza de testare in aceste conditii are aproximativ 13.7% sanse de a retine incorect ipoteza nula.
+
+#####  **Simularea erorilor de Tipul II**
+
+  Simularea este in particular folositoare aici. Putem defini urmatoarea functie **typeII.tester**:
+
+```{r, eval=TRUE}
+typeII.tester <- function(mu0,muA,sigma,n,alpha,ITERATIONS=10000){
+pvals <- rep(NA,ITERATIONS)
+for(i in 1:ITERATIONS){
+temporary.sample <- rnorm(n=n,mean=muA,sd=sigma)
+temporary.mean <- mean(temporary.sample)
+temporary.sd <- sd(temporary.sample)
+pvals[i] <- 1-pt((temporary.mean-mu0)/(temporary.sd/sqrt(n)),df=n-1)
+}
+return(mean(pvals>=alpha))
+}
+```
+
+  Aceasta functie este asemanatoare cu typeI.tester, diferenta consta in faptul ca typeII.tester are in plus mediata "adevarata" µA, prin care se genereaza probele.
+
+  Putem simula probabilitatea de aparitie a unei erori de Tip II (β) astfel:
+
+```{r, eval=TRUE}
+typeII.tester(mu0=0,muA=0.5,sigma=1,n=30,alpha=0.05)
+```
+
+  Rezultatul indica o valoare apropiata de valoarea teoretica β evaluata anterior, desi putin mai mare din cauza incertitudinii care este prezenta in mod natural cand se foloseste distributia de probe de tipul t in loc de o normala. Din nou, **de fiecare data cand se ruleaza tipeII.tester, rezultatele vor varia putin, avand in vedere faptul ca functia este bazata pe probe de date ipotetice generate aleatoriu**.
+
+  Prin rularea typeII.tester cu un nivel de significanta mai mic, observam ca probabilitatea aparitiei unei erori de tip II creste:
+
+```{r, eval=TRUE}
+typeII.tester(mu0=0,muA=0.5,sigma=1,n=30,alpha=0.01)
+```
+
+#####  **Alte influente asupra probabilitatii de eroare de Tipul II**
+
+  Significantul de nivel nu este singurul factor ce contribuie la aparitia β. Mentinandu-se α la 0.01, se va observa ce se intampla daca deviatia standard a masuratorilor brute creste de la σ = 1 la σ = 1.1 si apoi pana la σ = 1.2:
+
+```{r, eval=TRUE}
+typeII.tester(mu0=0,muA=0.5,sigma=1.1,n=30,alpha=0.01)
+typeII.tester(mu0=0,muA=0.5,sigma=1.2,n=30,alpha=0.01)
+```
+
+  Marind variabilitatea masuratorilor, fara sa se schimbe nicio alta valoare, creste sansa de aparitie a unei erori de tip II. Invers, daca variabilitatea masuratorilor brute este mai mica, distributiile de probe vor arata o reducere a lui β.
+
+  O dimensiune de proba mai mare sau mai mica va avea un impact asemanator. Fiind numitorul formulei pentru eroarea standard, un n cu o valoare mai mica va rezulta intr-o eroare standard mai mare, ceea ce va duce la cresterea valorii β; o dimensiune de proba mai mare va avea efectul opus. Daca se pastreaza valorile initiale de **µ0 = 0, µ A = 0.5, σ = 1.2, si α = 0.01**, se observa reducerea dimensiunii de probe de la 30 la 20, ceea ce duce la cresterea simularii ratei unei erori de tip II comparabil cu rezultatul cel mai recent de 0.5501, dar cresterea dimensiunii de probe la 40 scade β.
+
+```{r, eval=TRUE}
+typeII.tester(mu0=0,muA=0.5,sigma=1.2,n=20,alpha=0.01)
+typeII.tester(mu0=0,muA=0.5,sigma=1.2,n=40,alpha=0.01)
+```
+
+  In final, un alt factor care afecteaza β il reprezinta valoarea µA. Din nou, retinand valorile cele mai recente pentru toate celelalte componente, β va avea valori mai mari atunci cand µA se apropie de µ0 si invers, valori mai mici atunci cand µA creste.
+
+```{r, eval=TRUE}
+typeII.tester(mu0=0,muA=0.4,sigma=1.2,n=40,alpha=0.01)
+typeII.tester(mu0=0,muA=0.6,sigma=1.2,n=40,alpha=0.01)
+```
+
+  In concluzie, desi probabilitatea de aparitie a unei erori de tip II a fost simulata, conceptele generale discutate sunt valabile pentru orice ipoteza. Este usor de afirmat ca probabilitatea erorii de tip I se potriveste cu significantul de nivel si poate fi scazuta prin reducerea valorii lui α. In contrast, controlarea probabilitatii erorii de tip II este un procedeu mai greu de echilibrat care implica dimensiunea datelor de esantionare, significantul de nivel, variabilitatea de observatie si magnitudinea diferentei dintre valoarea reala si cea nula. Problema aceasta este prezenta strict la nivel academic deoarece "adevarul" este necunoscut in practica. Totusi, legatura dintre probabilitatea erorii de tip II si puterea statistica joaca un rol important in pregatirea pentru colectarea datelor, mai ales cand se considera cerintele dimensiunii probelor.
+
+#### Exercitiul 7
+
+<center>![](Part2/Exercise%2018.5.png)</center>
+
+#### Exercitiul 7 - Rezolvare
+
+```{r, eval=TRUE}
+# a
+
+typeI.mean<-function(mu0,sigma,n,alpha,ITERATIONS=10000,test="less"){
+      t.stat<-rep(NA,ITERATIONS)
+      pvals<-rep(NA,ITERATIONS)
+      for(i in 1:ITERATIONS){
+            temporary.sample<-rnorm(n=n,mean=mu0,sd=sigma)
+            temporary.mean<-mean(temporary.sample)
+            temporary.sd<-sd(temporary.sample)
+            t.stat[i]<-(temporary.mean-mu0)/(temporary.sd/sqrt(n))
+      }
+      if(test=="less"){
+        pvals<-pt(t.stat,df=n-1)    
+      }else 
+            if(test=="greater"){
+            pvals<-1-pt(t.stat,df=n-1)
+      }else 
+            if(test=="two.sided"){
+            pvals[t.stat>=0]<-2*(1-pt(t.stat[t.stat>=0],df=n-1))
+            pvals[t.stat<0]<-2*pt(t.stat[t.stat<0],df=n-1)
+            
+            }else {
+            stop("test nu e valid. Foloseste \"less\",\"greater\",or \"two.sided\"")
+      }
+      return(mean(pvals<alpha))
+}
+
+# i
+
+typeI.mean(0,1,40,0.05,test="less")
+typeI.mean(0,1,40,0.05,test="greater")
+typeI.mean(0,1,40,0.05,test="two.sided")
+
+# ii
+
+typeI.mean(-4,0.3,60,0.01,test="less")
+typeI.mean(-4,0.3,60,0.01,test="greater")
+typeI.mean(-4,0.3,60,0.01,test="two.sided")
+
+# b
+
+typeII.mean<-function(mu0,muA,sigma,n,alpha,test="two.sided",ITERATIONS=10000){
+      test.t<-rep(NA,ITERATIONS)
+      for(i in 1:ITERATIONS){
+            temporary.sample<-rnorm(n=n,mean=muA,sd=sigma)
+            temporary.mean<-mean(temporary.sample)
+            temporary.sd<-sd(temporary.sample)
+            test.t[i]<-(temporary.mean-mu0)/(temporary.sd/sqrt(n))
+      }
+      pvals<-pt(test.t,df=n-1)
+      if(test=="less"){
+            return(mean(pvals>=alpha))
+      }else if(test=="greater"){
+            return(mean(1-pvals>=alpha))
+      }else if(test=="two.sided"){
+            result <- pvals
+            result[test.t>0] <- 1-pvals[test.t>0]
+            return(mean(result>=alpha/2))
+      }else {
+            stop("\"test\" nu e valid. Foloseste \"less\", \"greater\" or \"two.sided\"")
+      }
+}
+
+#i
+
+typeII.mean(-3.2,-3.3,0.1,25,0.05,"two.sided")
+
+#ii
+
+typeII.mean(8994,5600,3888,9,0.01,"less")
+
+#iii
+
+typeII.mean(0.44,0.4,2.4,68,0.05,"greater")
+```
+
+#### 7.4 Puterea statistica
+
+  Pentru orice test de ipoteza, este util sa se ia in considerare puterea statistică potențială a acestuia. Puterea este probabilitatea de a respinge corect o ipoteză nulă care nu este adevărată. Pentru un test care are o rată de eroare de Tip II egala cu β, puterea statistică se calculează pur și simplu cu: 1 - β. Este de dorit ca un test să aibă o putere care să fie cât mai mare. Din simpla relatie cu probabilitatea de eroare de Tip II, deducem că toți factorii care influențează valoarea lui β afectează, de asemenea, în mod direct puterea.
+
+  Prin convenție, un test de ipoteză care are o putere mai mare de 0,8 este considerat puternic din punct de vedere statistic.
+
+  Putem evalua numeric puterea prin simularea anumitor conditii de testare.
+
+#####  **Simularea Puterii**
+
+  In cadrul exemplului, vom defini functia **power.tester** care ne va spune cu cat trebuie marit gradul de esantionare (n) pentru a avea un test puternic din punct de vedere statistic:
+
+```{r, eval=TRUE}
+power.tester <- function(nvec,...){
+nlen <- length(nvec)
+result <- rep(NA,nlen)
+for(i in 1:nlen){
+result[i] <- 1-typeII.tester(n=nvec[i],...)
+}
+return(result)
+}
+```
+
+  Functia **power.tester** primeste ca parametru vectorul marimilor esantioanelor **nvec**, iar cu un ciclu for se itereaza prin elementele lui nvec iterativ, simuland puterea fiecarei marimi de esationare. Puterile calculate sunt stocate intr-un vector rezultat care este intors de functie.
+
+  **De mentionat faptul ca functia power.tester se foloseste la randul sau de functia typeII.tester. Aceasta genereaza aleator valori ipotetice de esantionare, deci pot exista fluctuatii in rezultatele intoarse la fiecare rulare a functiei power.tester.**
+
+  Pentru exemplificarea functiei **power.tester**, vom crea intai vectorul *nvec*:
+
+```{r, eval=TRUE}
+sample.sizes <- 5:100
+sample.sizes
+```
+
+  Rularea functiei **power.tester** pe dimensiunile de esantionare generate, folosind un numar de iteratii egal cu 5000:
+
+```{r, eval=TRUE}
+pow <- power.tester(nvec=sample.sizes,
+mu0=0,muA=0.6,sigma=1.2,alpha=0.01,ITERATIONS=5000)
+pow
+```
+
+  Asa cum ne-am asteptat, marirea gradului de esantionare conduce la cresterea puterii de detectare. Observam atingerea pragului de 80% a puterii intre rezultatele *0.7950* si *0.8050*. Pentru identificarea gradului de esantionare minim necesar atingerii acestui prag de putere, vom folosi urmatoarea bucata de cod:
+
+```{r, eval=TRUE}
+minimum.n <- sample.sizes[min(which(pow>=0.8))]
+minimum.n
+```
+
+  Vom simula acelasi test in aceleasi conditii, schimband doar nivelul de significanta (alpha). Daca vom folosi alpha = 0.05 in loc de alpha = 0.01 (valoarea din simularea anterioara), valoarea critica ar fi mutata la stanga, scazand astfel β si ducand la cresterea puterii. Cu alte cuvinte, marimea gradului de esantionare necesar atingerii pragului de 80% (pentru un test puternic statistic), ar scadea. Ne asteptam sa obtinem un n \< 43 pentru aceasta simulare:
+
+```{r, eval=TRUE}
+pow2 <- power.tester(nvec=sample.sizes,
+mu0=0,muA=0.6,sigma=1.2,alpha=0.05,ITERATIONS=5000)
+minimum.n2 <- sample.sizes[min(which(pow2>0.8))]
+minimum.n2
+```
+
+  Observam obtinerea unei valori n = 27 pentru simularea cu alpha = 0.05, reprezentand o reducere semnificativa de la simularea initiala prin care s-a obtinut o marime minima de esantionare n = 43. Totusi, aceasta relaxare a lui alpha creste riscul savarsirii unei erori de Tip I.
+
+#####  **Curbe de Putere**
+
+  Pentru compararea grafica a celor doua simulari, vom folosi urmatoarea bucata de cod:
+
+```{r, eval=TRUE}
+plot(sample.sizes,pow,xlab="sample size n",ylab="simulated power")
+points(sample.sizes,pow2,col="gray")
+abline(h=0.8,lty=2)
+abline(v=c(minimum.n,minimum.n2),lty=3,col=c("black","gray"))
+legend("bottomright",legend=c("alpha=0.01","alpha=0.05"),
+col=c("black","gray"),pch=1)
+```
+
+  Pragul de putere de 80% este marcat pe grafic cu linia verticala, observam o atingere a acestei linii mult mai timpurie pentru o valoare mai mica a lui alpha.
+
+  Putem concluziona discutia despre erori si putere prin evidentierea necesitatii de a interpreta rezultatele cu atentie. O valoare p-value este doar o probabilitate si, ca atare, indiferent de cat de mica ar putea fi în orice circumstanță, nu poate niciodată să dovedească sau să infirme o afirmație de una singură. Aspectele legate de calitatea unui test de ipoteză (parametric sau de altă natură) ar trebui să fie luate în considerare, deși acest lucru este, fără îndoială, dificil în practică. Cu toate acestea, o conștientizare a erorilor de tip I și de tip II, precum și a conceptului de puterea statistică, este extrem de utilă în punerea în aplicare și în evaluarea oricărei proceduri formale de testare statistică.
+
+#### Exercitiul 8
+
+<center>![](Part2/Exercise%2018.6.png)</center>
+
+#### Exercitiul 8 - Rezolvare
+
+```{r, eval=TRUE}
+# a
+
+power.mean<-function(nvec,...){
+      nlen<-length(nvec)
+      result<-rep(NA,nlen)
+      for(i in 1:nlen){
+            result[i]<-1-typeII.mean(n=nvec[i],...)
+      }
+      return(result)
+}
+
+# i
+
+sample.sizes=5:100
+power.mean(nvec=50,mu0=10,muA=10.5,sigma=0.9,alpha=0.01,test="two.sided")
+
+# ii
+
+power.mean(nvec=44,mu0=80,muA=78.5,sigma=3.1,alpha=0.05,test="two.sided")
+
+power.mean(nvec=44,mu0=80,muA=78.5,sigma=3.1,alpha=0.01,test="two.sided")
+
+# b
+
+snacks <- c(87.7,80.01,77.28,78.76,81.52,74.2,80.71,79.5,77.87,81.94,80.7,82.32,
+            75.78,80.19,83.91,79.4,77.52,77.62,81.4,74.89,82.95,73.59,77.92,
+            77.18,79.83,81.23,79.28,78.44,79.01,80.47,76.23,78.89,77.14,69.94,
+            78.54,79.7,82.45,77.29,75.52,77.21,75.99,81.94,80.41,77.7)
+
+sample.sizes<- 5:100
+
+pow1 <- power.mean(
+      nvec = sample.sizes,
+      mu0 = 80,
+      muA = 78.5,
+      sigma = 3.1,
+      alpha = 0.05,
+      ITERATIONS = 5000,
+      test = "less"
+)
+
+pow2 <- power.mean(
+      nvec = sample.sizes,
+      mu0 = 80,
+      muA = 78.5,
+      sigma = 3.1,
+      alpha = 0.01,
+      ITERATIONS = 5000,
+      test = "less"
+)
+
+min.1<-sample.sizes[min(which(pow1>0.8))]
+min.2<-sample.sizes[min(which(pow2>0.8))]
+
+plot(sample.sizes,pow1,main="Dimensiunile minime de esantionare pentru alpha",xlab="Dimensiunea de esantionare",ylab="Putere Simulata")
+points(pow2,col="lightblue")
+abline(h=0.8,lty=3)
+abline(v=min.1,lty=4)
+abline(v=min.2,lty=4,col="lightblue")
+legend("bottomright",legend=c("alpha=0.05","alpha=0.01"),fill=c("black","lightblue"))
+```
+
+## 8. One-Way ANOVA
+
+  Analiza varianței (ANOVA) este o metodă statistică utilizată pentru a testa dacă există o diferență semnificativă între mai multe medii de grupuri. Ea permite compararea mai multor grupuri simultan și determină dacă există cel puțin o diferență între ele.
+
+  Există mai multe tipuri de ANOVA, cea mai simpla fiind ANOVA de un singur factor. Aceasta este utilizată pentru a compararea mai multor grupuri cu privire la o singura variabila. De exemplu, ANOVA poate fi folosita pentru a determina diferentele dintre greutatile unor grupuri de pui de gaina (setul de date *chickwts*) care au fost hranite cu tipuri diferite de mancare.
+
+#### 8.1 Ipoteze si verificarea diagnosticului
+
+  Verificarea diagnosticului implică testarea ipotezei prin colectarea și analizarea datelor empirice. Dacă datele colectate sprijină ipoteza, aceasta este considerată a fi validată. Dacă datele nu sprijină ipoteza, aceasta este considerată a fi respinsă.
+
+  În general, în statistică, se folosește un nivel de significanță pentru a determina dacă datele sunt suficient de puternice pentru a respinge ipoteza nullă (ipoteza că nu există diferență sau relație între variabilele studiate). Nivelul de significanță este un prag care se stabilește înainte de colectarea datelor și care indică probabilitatea de a obține rezultatele observate întâmplător dacă ipoteza nullă este adevărată. Dacă probabilitatea este mai mică decât nivelul de significanță stabilit, se respinge ipoteza nullă și se acceptă ipoteza alternativă (ipoteza că există o diferență sau o relație între variabile).
+
+  Urmatoarele presupuneri trebuie validate pentru ca rezultatele unui test ANOVA one-way sa fie de incredere:
+
+-   **Independenta** - Datele din cele k grupuri trebuie sa fie independente intre ele si observatiile din fiecare grup trebuie sa fie independente si identic distribuite.
+-   **Normalitatea** - Observatiile din fiecare grup ar trebui sa fie normal distribuite sau cel putin sa fie aproximativ normal distribuite.
+-   **Egalitatea variatiilor** - Variatia observatiilor din fiecare grup ar trebui sa fie egala sau cel putin aproximativ egala.
+
+  Daca presupunerile de normalitate sau de egalitate a variatiilor sunt incalcate, nu inseamna neaparat ca rezultatele testului sunt inutile, ci ca este afectata eficienta de a detecta o diferenta reala intre medii.
+
+  Revenind la exemplul anterior cu greutatile puilor de gaina (setul de date *chickwts*), vom compara mediile greutatilor a 6 grupuri pui, fiecare grup fiind hranit cu un alt tip de mancare (k = 6), pentru a vedea daca acestea sunt egale:
+
+```{r, eval=TRUE}
+table(chickwts$feed)
+chick.means <- tapply(chickwts$weight,INDEX=chickwts$feed,FUN=mean)
+chick.means
+boxplot(chickwts$weight~chickwts$feed)
+points(1:6,chick.means,pch=4,cex=1.5)
+```
+
+  Deoarece graficul boxplot arata in loc de medie valoarea mediana, ultima linie de cod adauga fiecarui box valoarea medie specifica fiecarui tip de mancare.
+
+  Analizand graficul, putem sesiza o diferenta intre mediile de greutate. Dar e vreuna dintre diferente significanta? Pentru a ne da seama, testul ANOVA se bazeaza pe urmatorele ipoteze:
+
+  **H0 : μcasein = μhorsebean = µlinseed = µmeatmeal = µsoybean = µsunflower**
+
+  **HA : Mediile nu sunt toate egale.**
+
+  Pornind de la presupunerea ca valorile sunt independente, trebuie verificate celelalte presupuneri inainte de a implementa testul. Astfel, putem examina egalitatea variatiilor folosind regula generala din cele doua teste de proba t-test. Putem valida presupunerea egalitatii variatiilor daca raportul dintre valoarea maxima si minima a variatiei standard este mai mica decat 2. Pentru greutatile puilor de gaina, urmatorul cod determina aceasta validare:
+
+```{r, eval=TRUE}
+chick.sds <- tapply(chickwts$weight,INDEX=chickwts$feed,FUN=sd)
+chick.sds
+max(chick.sds)/min(chick.sds)
+```
+
+  Pentru validarea normalitatii, se va proceda astfel:
+
+-   se vor rearanja si replica elementele din vectorul *chick.means* pentru a corespunde elementelor din vectorul original de greutati
+-   se va folosi functia *as.numeric* pe fiecare valoare a *chickwts\$feed* din dataframe pentru rearanjarea elementelor din *chick.means*
+-   se va lua vectorul original de greutati si se va scadea din el vectorul *chick.means* modificat
+
+  Diferenta va fi calculata astfel:
+
+```{r, eval=TRUE}
+chick.meancen <- chickwts$weight-chick.means[as.numeric(chickwts$feed)]
+```
+
+  Aceste valori centrate pe medie pot fi referite si ca *reziduuri*. Reziduurile sunt folosite pentru validarea normalitatii observatiilor. In acest sens, se va analiza graficul normal QQ, pentru aceasta se vor folosi functiile *qqnorm* si *qqline*:
+
+```{r, eval=TRUE}
+qqnorm(chick.meancen,main="Grafic QQ normal al reziduurilor")
+qqline(chick.meancen)
+```
+
+  Bazandu-ne pe graficul de mai sus, putem afirma presupunerea de normalitate a datelor de la care am pornit.
+
+  Investigarea si validarea presupunerilor se numeste *verificarea diagnosticului*. Exista si alte ipoteze generale de testare a normalitatii, cum ar fi *testul Shapiro-Wilk* sau *testul Anderson-Darling*.
+
+#### 8.2 Construirea tabelei prin metoda One-Way ANOVA
+
+  Testul continua prin a calcula intai metricile asociate cu variabilitatea generala si apoi calculul variabilitatii din grupuri si dintre grupuri. Toate acestea culmineaza printr-un singur test statistic si incadrarea *p-value* in ipoteza mentionata anterior. Aceste valori sunt definite de obicei intr-un tabel, dupa cum urmeaza:
+
+-   xi - xN reprezinta N observatii, indiferent de grup
+-   xi(j) - xn(j) reprezinta observatiile dintr-un anumit grup j = 1...k, astfel incat n1 + ... + nk = N.
+-   *marea medie* a observatiilor este definita ca fiind media aritmetica a observatiilor
+
+  Tabelul ANOVA este apoi construit, notarile avand urmatoarea definitie:
+
+-   SS - suma patratelor
+-   df - grade de libertate
+-   MS - media patrata
+-   F - statistica testului F
+-   p - p-value
+
+![](Part2/tabel-anova.PNG)
+
+  Valorile 1-6 sunt calculate cu urmatoarele formule:
+
+<center>![](Part2/formulas.PNG)</center>
+
+#### 8.3 Construirea tabelelor ANOVA prin intermediul functiei aov
+
+  R permite contruirea usoara a unui tabel ANOVA pentru greutatea puilor de gaina folosind functia predefinita *aov*:
+
+```{r, eval=TRUE}
+chick.anova <- aov(weight~feed,data=chickwts)
+summary(chick.anova)
+```
+
+  Aceste rezultate se pot confirma folosind ecuatiile expuse mai devreme.
+
+  Interpretarea unei ipoteze de test bazata pe ANOVA urmareste aceleasi reguli ca oricare alt test. Cu intelegerea unui *p-value* ca *probabilitatea de a observa statisticile de proba disponibile sau daca H0 este adevarata*. O valoare mica a p-value desemneaza respingerea ipotezei nule H0 in favoarea ipotezei Ha. Ha afirma ca exista o diferenta intre mediile de greutate ale puilor de gaina atunci cand acestia au diete diferite.
+
+#### Exercitiul 9
+
+<center>![](Part2/Exercise%2019.1.png)</center>
+
+#### Exercitiul 9 - Rezolvare
+
+```{r, eval=TRUE}
+info<-data.frame("dep"=c(93, 120, 65, 105, 115, 82, 99, 87, 100, 90, 78, 95, 93,
+                         88, 110, 85, 45, 80, 28, 75, 70, 65, 55, 50, 40, 100, 
+                         75, 65, 40, 73, 65, 50, 30, 45, 50, 45, 55, 96, 58, 95,
+                         90, 65, 80, 85, 95, 82),
+                 "site"=c(rep("Site i",15),
+                          rep("Site ii",10),
+                          rep("Site iii",12),
+                          rep("Site iv",9)))
+# a
+infomean<-tapply(info$dep,info$site,mean)
+
+boxplot(info$dep~info$site,
+        xlab="Site",
+        ylab="Depth (cm)",
+        main="Boxplot pentru adancimea in cm a fiecarui sit")
+
+# Puncte aditionale
+points(1:4,infomean,pch=4)
+
+# b
+infomeancen <- info$dep-infomean[as.numeric(as.factor(info$site))]
+
+qqnorm(infomeancen,main="Grafic QQ normal al reziduurilor")
+qqline(infomeancen)
+
+# Graficul ne ofera suficiente informatii pentru a accepta normalitatea datelor
+
+info.sds<-tapply(info$dep,info$site,sd)
+max(info.sds)/min(info.sds)
+
+# Raportul dintre valoarea maxima si minima a variatiei standard este mai mica 
+# decat 2, deci putem accepta egalitatea variatiilor
+
+# c
+infoaov<-aov(dep~site,info)
+summary(infoaov)
+
+# Valoarea lui p-value este foarte mica, deci putem respinge ipoteza H0
+
+# d
+# Verificarea celor 4 masuratori pentru aplicarea ANOVA
+
+# 1) Sepal.Length
+
+sepal_length.mean<-tapply(iris$Sepal.Length,iris$Species,mean)
+sepal_length.meancen<-iris$Sepal.Length-sepal_length.mean[as.numeric(iris$Species)]
+sepal_length.sd<-tapply(iris$Sepal.Length,iris$Species,sd)
+
+# Verificarea variatiei
+
+boxplot(iris$Sepal.Length~iris$Species, main="Boxplot pentru lungimea sepalelor pentru diferitele specii")
+points(1:3,sepal_length.mean,pch=4)
+max(sepal_length.sd)/min(sepal_length.sd)
+
+# Variatia din boxplot si raportul variatiilor confirma egalitatea variatiilor
+
+# Verificarea normalitatii
+
+qqnorm(sepal_length.meancen)
+qqline(sepal_length.meancen)
+
+# Graficul ne ofera suficiente informatii pentru a accepta normalitatea datelor
+# Se poate folosi pentru analiza variantei (ANOVA)
+
+# 2) Sepal.width
+
+sepal_width.mean<-tapply(iris$Sepal.Width,iris$Species,mean)
+sepal_width.meancen<-iris$Sepal.Width-sepal_width.mean[as.numeric(iris$Species)]
+sepal_width.sd<-tapply(iris$Sepal.Width,iris$Species,sd)
+
+# Verificarea variatiei
+
+boxplot(iris$Sepal.Width~iris$Species, main="Boxplot pentru latimea sepalelor pentru diferitele specii")
+points(1:3,sepal_width.mean,pch=4)
+max(sepal_width.sd)/min(sepal_width.sd)
+
+# Variatia din boxplot si raportul variatiilor confirma egalitatea variatiilor
+
+# Verificarea normalitatii
+
+qqnorm(sepal_width.meancen)
+qqline(sepal_width.meancen)
+
+# Graficul ne ofera suficiente informatii pentru a accepta normalitatea datelor.
+# Aceasta distribuire este mai normala decat cea de dinainte
+# Se poate folosi pentru analiza variantei (ANOVA)
+
+# 3) Petal.Length
+
+petal_length.mean<-tapply(iris$Petal.Length,iris$Species,mean)
+petal_length.meancen<-iris$Petal.Length-petal_length.mean[as.numeric(iris$Species)]
+petal_length.sd<-tapply(iris$Petal.Length,iris$Species,sd)
+
+# Verificarea variatiei
+
+boxplot(iris$Petal.Length~iris$Species, main="Boxplot pentru lungimea petalelor pentru diferitele specii")
+points(1:3,petal_length.mean,pch=4)
+max(petal_length.sd)/min(petal_length.sd)
+
+# Variatia din boxplot si raportul variatiilor resping egalitatea variatiilor
+
+# Verificarea normalitatii
+
+qqnorm(petal_length.meancen)
+qqline(petal_length.meancen)
+
+# Graficul ne ofera suficiente informatii pentru a accepta normalitatea datelor.
+# Aceasta distribuire a datelor nu este potrivita pentru analiza variantei (ANOVA)
+
+# 4) Petal.width
+
+petal_width.mean<-tapply(iris$Petal.Width,iris$Species,mean)
+petal_width.meancen<-iris$Petal.Width-petal_width.mean[as.numeric(iris$Species)]
+petal_width.sd<-tapply(iris$Petal.Width,iris$Species,sd)
+
+# Verificarea variatiei
+
+boxplot(iris$Petal.Width~iris$Species, main="Boxplot pentru latimea petalelor pentru diferitele specii")
+points(1:3,petal_width.mean,pch=4)
+max(petal_width.sd)/min(petal_width.sd)
+
+# Variatia din boxplot si raportul variatiilor resping egalitatea variatiilor
+
+# Verificarea normalitatii
+
+qqnorm(petal_width.meancen)
+qqline(petal_width.meancen)
+
+# Graficul ne ofera suficiente informatii pentru a accepta normalitatea datelor.
+# Aceasta distribuire a datelor nu este potrivita pentru analiza variantei (ANOVA)
+
+# Pentru cele mai bune rezultate, cel mai bun set de date pentru analiza variantei (ANOVA)
+# Este cel dat de analiza sepalelor (Sepal.width + Sepal.length)
+
+# e
+# Generarea tabelului ANOVA folosind aov pentru Sepal.length
+
+sepal_length.aov<-aov(Sepal.Length~Species,iris)
+summary(sepal_length.aov)
+
+# Valoarea p-valuea este mult mai mica decat F. Respingem H0
+
+# Generarea tabelului ANOVA folosind aov pentru Sepal.width
+
+sepal_width.aov<-aov(Sepal.Width~Species,iris)
+summary(sepal_width.aov)
+
+# Valoarea p-valuea este mult mai mica decat F. Respingem H0
+```
+
+## 9. Two-Way ANOVA
+
+  În multe studii, variabila numerică de rezultat care ne intereseaza va fi clasificată de mai mult de o singură variabilă de grupare. În aceste cazuri, vom utiliza ANOVA cu factori multipli mai degrabă decât ANOVA cu un singur factor. Această tehnică face referire directă la numărul de variabile de grupare utilizate.
+
+  Creșterea numărului de variabile de grupare complică lucrurile oarecum - efectuarea ANOVA cu un singur factor pentru fiecare variabilă în parte este inadecvată. Cand se trateaza un caz cu mai mult de un factor de grupare categorica, trebuie să luam în considerare efectele principale ale fiecărui factor asupra rezultatului numeric, ținând cont în același timp de prezența celorlalti factori de grupare. Totuși, asta nu este tot. Este la fel de important investigam ideea unui efect interactiv; dacă există un efect interactiv, atunci acesta sugerează că impactul pe care una dintre variabilele de grupare îl are asupra rezultatului de interes, specificat de efectul său principal, variază în funcție de nivelurile celorlalte variabile de grupare.
+
+#### 9.1 O suita de ipoteze
+
+  Inainte de a enunta ipotezele, vom nota variabila numerica de rezultat cu O si cele doua variabile de grupare cu G1 si G2. Ipotezele pentru ANOVA cu doi factori de grupare sunt urmatoarele:
+
+-   H0 : - G1 nu are niciun efect principal (marginal) asupra mediei lui O.
+
+  - G2 nu are un efect principal (marginal) asupra mediei lui O.
+
+  - Nu există niciun efect interactiv al lui G1 cu G2 asupra mediei lui O.
+
+-   HA : Separat, fiecare afirmație din H0 este incorectă.
+
+  Ca exemplu vom folosi setul de date predefinit **warpbreaks**. Se va folosi functia **tapply** pentru a observa numarul de rupturi pentru fiecare clasificare:
+
+```{r, eval=TRUE}
+tapply(warpbreaks$breaks,INDEX=list(warpbreaks$wool,warpbreaks$tension),
+FUN=mean)
+```
+
+  Se pot furniza mai mult de o variabila de grupare pentru argumentul **INDEX** ca membri separati ai unei liste. Rezultatele sunt returnate sub forma unei matrice pentru doua variabile de grupare, o matrice 3D pentru 3 variabile de grupare, si asa mai departe.
+
+  Cu toate acestea, pentru anumite analize, este posibil să avem nevoie de aceleași informații furnizate anterior într-un format diferit. Funcția **aggregate** este similară cu **tapply**, dar returnează un dataframe, rezultatele fiind stivuite în funcție de variabilele de grupare specificate. Functia **aggregate** este apelată în același mod ca **tapply**. Primul argument primește vectorul de date interes. Al doilea argument, **by**, trebuie să fie o listă cu variabilele de grupare dorite, iar în **FUN**, se specifică funcția care trebuie să opereze asupra fiecărui subset.
+
+```{r, eval=TRUE}
+wb.means <- aggregate(warpbreaks$breaks,
+by=list(warpbreaks$wool,warpbreaks$tension),FUN=mean)
+wb.means
+```
+
+#### 9.2 Principalele efecte si interactiuni
+
+  Am mentionat mai devreme ca se poate aplica ANOVA cu un singur factor pe fiecare variabila de grupare separat, dar acest lucru, in general, nu este o idee buna. Vom demonstra acum acest lucru:
+
+```{r, eval=TRUE}
+summary(aov(breaks~wool,data=warpbreaks))
+summary(aov(breaks~tension,data=warpbreaks))
+```
+
+  Problema aici este că, ignorând una dintre variabile, se pierde capacitatea de a detecta diferențele (sau, mai general, relațiile statistice) care pot sa apara la un nivel mai fin. De exemplu, deși numai tipul de lână pare să nu aiba un impact remarcabil asupra numărului mediu de ruperi, nu putem spune dacă acest lucru ar fi valabil dacă doar am analiza tipurile de lână la un anumit nivel de tensiune.
+
+  În schimb, vom folosi ANOVA cu doi factori. Urmatorul cod execută ANOVA cu doi factori pentru datele privind rupturile bazate doar pe efectele principale ale celor două variabile de grupare:
+
+```{r, eval=TRUE}
+summary(aov(breaks~wool+tension,data=warpbreaks))
+```
+
+  Observam ca rezultatele arata o scadere mica a valorii p-value, care este acum atasata ambelor variabile de grup. Pentru a interpreta rezultatele, pastram o variabila de grup constanta: pentru un tip de lana, exista dovezi semnificative din punct de vedere statistic care sugereaza o diferenta in ceea ce priveste numarul mediu de rupturi intre diferitele niveluri de tensiune. Pentru un singur nivel de tensiune, dovezile privind o diferență având în vedere cele două tipuri de lână au crescut cu puțin, dar încă nu este semnificativă din punct de vedere statistic (presupunand ca α = 0.05).
+
+  Pentru a ține cont de interacțiuni, se face o ușoară ajustare a modelului ANOVA cu doi factori:
+
+```{r, eval=TRUE}
+summary(aov(breaks~wool+tension+wool:tension,data=warpbreaks))
+```
+
+  Putem interpreta mai detaliat un efect de interactiune a doi factori folosind functia **interaction.plot**:
+
+```{r, eval=TRUE}
+interaction.plot(x.factor=wb.means[,2],trace.factor=wb.means[,1],
+response=wb.means$x,trace.label="wool",
+xlab="tension",ylab="mean warp breaks")
+```
+
+## 10. Testul Kruskal-Waillis
+
+  Cand comparam mai multe medii, exista situatii in care nu vrem sa presupunem normalitatea sau constatam ca presupunerea normalitatii nu este valabila in cadrul verificarilor de diagnosticare. In acest caz, se va folosi testul Kruskal Wallis, o alternativa a metodei ANOVA cu un singur factor care relaxeaza dependenta de necesitatea normalitatii. Aceasta metoda testeaza **egalitatea distributiilor** masuratorilor in fiecare nivel al factorului de grupare. Facand presupunerile normale de egalitate a variatiilor intre aceste grupuri, ne vom putea gandi la acest test ca la unul care compara **medianele**, ci nu mediile.
+
+  Ipotezele pentru acest test sunt urmatoarele:
+
+-   H0 : Medianele grupurilor sunt toate egale
+
+-   HA : Medianele grupurilor nu sunt toate egale (alternativ, cel puțin o mediană de grup diferă).
+
+  Testul Kruskal-Wallis este o abordare neparametrică, deoarece nu se bazează pe cuantele unei distribuții parametrice standardizate sau oricare dintre funcțiile acesteia.
+
+  În cadrul exemplului, se va folosi setul de date **survey** din pachetul **MASS**. Exemplul urmareste sa observe daca varsta studentilor tinde sa difere in ceea ce priveste cele 4 categorii de fumat din *Smoke*. O examinare a boxplotului si a graficului QQ normal al reziduurilor sugereaza ca metoda ANOVA cu un singur factor nu este neaparat o idee buna. Urmatorul cod genereaza boxplotul si graficul QQ normal pentru acest caz:
+
+```{r, eval=TRUE}
+library("MASS")
+boxplot(Age~Smoke,data=survey)
+age.means <- tapply(survey$Age,survey$Smoke,mean)
+age.meancen <- survey$Age-age.means[as.numeric(survey$Smoke)]
+qqnorm(age.meancen,main="Normal QQ plot of residuals")
+qqline(age.meancen)
+```
+
+  Cu această posibilă încălcare a normalității, putem aplica testul Kruskal-Wallis în loc de testul parametric ANOVA. O verificare rapidă pentru egalitatea varianțelor susține și mai mult acest lucru, cu raportul dintre cea mai mare și cea mai mica deviatie standard fiind în mod clar mai mic decat 2:
+
+```{r, eval=TRUE}
+survey.sds<-tapply(survey$Age,survey$Smoke,sd)
+max(survey.sds)/min(survey.sds)
+```
+
+  Un test Kruskal-Wallis este efectuat folosind functia **kruskal.test**:
+
+```{r, eval=TRUE}
+kruskal.test(Age~Smoke,data=survey)
+```
+
+  Valorile mari ale p-value sugereaza ca ipoteza H0 nu este incalcata (toate medianele sunt egale). In alte cuvinte, nu pare sa existe o diferenta intre varstele studentilor din cele 3 categorii de fumat.
+
+#### Exercitiul 10
+
+<center>![](Part2/Exercise%2019.2.png)</center>
+
+#### Exercitiul 10 - Rezolvare
+
+```{r, eval=TRUE}
+# a
+
+depth.f<-cut(quakes$depth,breaks=c(0,200,400,680),include.lowest = F)
+
+# b
+# Se verifica egalitatea variatiilor si normalitatea
+
+boxplot(quakes$depth~depth.f)
+depth.sd<-tapply(quakes$depth,depth.f,sd)
+max(depth.sd)/min(depth.sd)
+
+depth.mean<-tapply(quakes$depth,depth.f,mean)
+depth.meancen<-quakes$depth-depth.mean[as.numeric(depth.f)]
+hist(depth.meancen)
+qqnorm(depth.meancen)
+qqline(depth.meancen)
+
+# Atat egalitatea variatiilor, cat si normalitatea distributiei sunt acceptate
+# Ceea ce inseamna ca putem aplica testul ANOVA
+
+# c
+
+summary(aov(quakes$depth~depth.f))
+
+# Valoarea foarte mica a p-value (p-value < 0.01) sugereaza ca nu toate mediile sunt egale
+# Ha este ipoteza acceptata
+
+# d
+
+cars.mean<-aggregate(Cars93$Length,
+          by=list(Airbags=Cars93$AirBags,
+                  ManualTransmission=Cars93$Man.trans.avail),
+          FUN=mean)
+cars.mean
+
+# e
+
+interaction.plot(cars.mean[,1],
+                 cars.mean[,2],
+                 response=cars.mean[,3],
+                 xlab = "Air Bags",
+                 ylab="mean length",
+                 trace.label = "Manual\n   Trans")
+
+# Graficul sugereaza ca exista o interactiune intre Airbags si Manual transmission
+# Considerand doar aceste doua variabile
+
+# f
+
+summary(aov(Length~AirBags+Man.trans.avail+AirBags:Man.trans.avail,Cars93))
+
+# Nu sunt suficiente dovezi statistice pentru efectul interactiunii
+# Dar putem confirma efectul principal al ambelor variabile asupra lungimii
+```
